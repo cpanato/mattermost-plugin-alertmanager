@@ -2,7 +2,7 @@
 
 This plugin is the [AlertManager](https://github.com/prometheus/alertmanager) bot for Mattermost.
 
-Forked and inspired on https://github.com/metalmatze/alertmanager-bot the alertmanager for Telegram. Thanks so much @metalmatze
+Forked and inspired on https://github.com/metalmatze/alertmanager-bot the alertmanager for Telegram. Thanks so much [@metalmatze](https://github.com/metalmatze/)
 
 Some features:
 --------------
