@@ -1,0 +1,28 @@
+global:
+  resolve_timeout: 5m
+  http_config: {}
+  smtp_hello: localhost
+  smtp_require_tls: true
+route:
+  receiver: mattermost-alertmananger
+  group_by:
+  - alertname
+  group_wait: 10s
+  group_interval: 10s
+  repeat_interval: 30m
+inhibit_rules:
+- source_match:
+    severity: critical
+  target_match:
+    severity: warning
+  equal:
+  - alertname
+  - dev
+  - instance
+templates: []
+receivers:
+- name: 'mattermost-alertmananger'
+  webhook_configs:
+  - send_resolved: true
+    url: 'https://cpanato.eu.ngrok.io/plugins/com.cpanato.alertmanager/api/webhook?token=vXihlhFruTx-xPecIg24R3u2Ibfi_btz'
+

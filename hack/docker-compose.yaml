@@ -1,0 +1,9 @@
+version: '2'
+
+services:
+  alertmanager:
+    ports:
+    - 9093:9093
+    image: bitnami/alertmanager:latest
+    volumes:
+      - ./config.yml:/opt/bitnami/alertmanager/conf/config.yml
