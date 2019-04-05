@@ -25,9 +25,9 @@ func httpRetry(method string, url string) (*http.Response, error) {
 	defer cancel()
 
 	fn := func() error {
-		req, err := http.NewRequest(method, url, nil)
-		if err != nil {
-			return err
+		req, errReq := http.NewRequest(method, url, nil)
+		if errReq != nil {
+			return errReq
 		}
 
 		req = req.WithContext(ctx)
@@ -51,8 +51,8 @@ func httpRetry(method string, url string) (*http.Response, error) {
 		return nil
 	}
 
-	if err := backoff.Retry(fn, httpBackoff()); err != nil {
-		return nil, err
+	if errRetry := backoff.Retry(fn, httpBackoff()); errRetry != nil {
+		return nil, errRetry
 	}
 	return resp, err
 }

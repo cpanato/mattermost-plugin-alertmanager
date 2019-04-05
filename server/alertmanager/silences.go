@@ -21,8 +21,8 @@ func ListSilences(alertmanagerURL string) ([]types.Silence, error) {
 	var silencesResponse []types.Silence
 	dec := json.NewDecoder(resp.Body)
 	defer resp.Body.Close()
-	if err := dec.Decode(&silencesResponse); err != nil {
-		return nil, err
+	if errDec := dec.Decode(&silencesResponse); errDec != nil {
+		return nil, errDec
 	}
 
 	silences := silencesResponse
