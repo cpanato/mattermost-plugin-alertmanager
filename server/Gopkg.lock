@@ -702,8 +702,6 @@
   analyzer-version = 1
   input-imports = [
     "github.com/cenkalti/backoff",
-    "github.com/go-kit/kit/log",
-    "github.com/go-kit/kit/log/level",
     "github.com/hako/durafmt",
     "github.com/mattermost/mattermost-server/model",
     "github.com/mattermost/mattermost-server/plugin",
