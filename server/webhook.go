@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	alertManagerIconURL  = "https://upload.wikimedia.org/wikipedia/en/3/38/Prometheus_software_logo.svg"
+	alertManagerIconURL  = "https://upload.wikimedia.org/wikipedia/commons/3/38/Prometheus_software_logo.svg"
 	alertManagerUsername = "AlertManager Bot"
 )
 
