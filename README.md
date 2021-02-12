@@ -16,6 +16,8 @@ TODO:
   - Create silences
   - Create alerts
   - List expired silences
+  - Create and use a bot account
+  - Allow multiple webhooks/channels
 
 
 **Supported Mattermost Server Versions: 5.6+**
