@@ -3,7 +3,7 @@ executors:
   default:
     working_directory: /go/src/github.com/cpanato/mattermost-plugin-alertmanager
     docker:
-      - image: circleci/golang:1.12
+      - image: circleci/golang:1.15
 
 jobs:
   lint:
