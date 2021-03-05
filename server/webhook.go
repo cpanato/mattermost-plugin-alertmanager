@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/hako/durafmt"
-	"github.com/mattermost/mattermost-server/model"
-	"github.com/prometheus/alertmanager/notify"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/prometheus/alertmanager/notify/webhook"
 )
 
 const (
@@ -20,8 +20,8 @@ const (
 func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	p.API.LogInfo("Received alertmanager notification")
 
-	var webhook notify.WebhookMessage
-	err := json.NewDecoder(r.Body).Decode(&webhook)
+	var message webhook.Message
+	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
 		p.API.LogError("failed to decode webhook message", "err", err.Error())
 		w.WriteHeader(http.StatusBadRequest)
@@ -29,8 +29,7 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var fields []*model.SlackAttachmentField
-
-	for _, alert := range webhook.Alerts {
+	for _, alert := range message.Alerts {
 		statusMsg := strings.ToUpper(alert.Status)
 		if alert.Status == "firing" {
 			statusMsg = fmt.Sprintf(":fire: %s :fire:", strings.ToUpper(alert.Status))
@@ -47,21 +46,16 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 		fields = addFields(fields, "Ended At", durafmt.Parse(time.Since(alert.EndsAt)).String(), false)
 	}
 
-	title := fmt.Sprintf("[%s](%s)", webhook.Receiver, webhook.ExternalURL)
+	title := fmt.Sprintf("[%s](%s)", message.Receiver, message.ExternalURL)
 	attachment := &model.SlackAttachment{
 		Title:  title,
 		Fields: fields,
-		Color:  setColor(webhook.Status),
+		Color:  setColor(message.Status),
 	}
 
 	post := &model.Post{
 		ChannelId: p.ChannelID,
 		UserId:    p.BotUserID,
-		Props: map[string]interface{}{
-			"from_webhook":      "true",
-			"override_username": alertManagerUsername,
-			"override_icon_url": alertManagerIconURL,
-		},
 	}
 
 	model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
@@ -74,7 +68,7 @@ func addFields(fields []*model.SlackAttachmentField, title, msg string, short bo
 	return append(fields, &model.SlackAttachmentField{
 		Title: title,
 		Value: msg,
-		Short: short,
+		Short: model.SlackCompatibleBool(short),
 	})
 }
 

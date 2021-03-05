@@ -2,7 +2,7 @@
     "id": "com.cpanato.alertmanager",
     "name": "AlertManager",
     "description": "Alermanager plugin for Mattermost, you can receive alerts and interact with alertmanager.",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "server": {
         "executables": {
             "linux-amd64": "server/dist/plugin-linux-amd64",
@@ -25,12 +25,6 @@
             "display_name": "Channel:",
             "type": "text",
             "help_text": "Channel you want to send messages to. Use channel URL such as 'town-square', instead of a display name. If you specify a channel that does not exist, this plugin creates a new channel with that name."
-        },
-        {
-            "key": "Username",
-            "display_name": "User:",
-            "type": "username",
-            "help_text": "Select the username that this integration is attached to."
         },
         {
             "key": "Token",

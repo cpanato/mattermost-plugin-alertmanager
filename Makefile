@@ -1,5 +1,4 @@
 GO ?= $(shell command -v go 2> /dev/null)
-DEP ?= $(shell command -v dep 2> /dev/null)
 NPM ?= $(shell command -v npm 2> /dev/null)
 CURL ?= $(shell command -v curl 2> /dev/null)
 MANIFEST_FILE ?= plugin.json
@@ -63,7 +62,7 @@ endif
 ## Ensures the server dependencies are installed.
 server/.depensure:
 ifneq ($(HAS_SERVER),)
-	cd server && $(DEP) ensure
+	cd server
 	touch $@
 endif
 
@@ -159,7 +158,6 @@ clean:
 	rm -fr dist/
 ifneq ($(HAS_SERVER),)
 	rm -fr server/dist
-	rm -fr server/.depensure
 endif
 ifneq ($(HAS_WEBAPP),)
 	rm -fr webapp/.npminstall

@@ -8,8 +8,8 @@ import (
 
 	"github.com/cpanato/mattermost-plugin-alertmanager/server/alertmanager"
 
-	"github.com/mattermost/mattermost-server/model"
-	"github.com/mattermost/mattermost-server/plugin"
+	"github.com/mattermost/mattermost-server/v5/model"
+	"github.com/mattermost/mattermost-server/v5/plugin"
 
 	"github.com/hako/durafmt"
 )
@@ -91,11 +91,6 @@ func (p *Plugin) sendEphemeralMessage(msg, channelId, userId string) {
 		Message:   msg,
 		ChannelId: channelId,
 		UserId:    userId,
-		Props: model.StringInterface{
-			"override_username": alertManagerUsername,
-			"override_icon_url": alertManagerIconURL,
-			"from_webhook":      "true",
-		},
 	}
 
 	p.API.LogDebug("Will send an ephemeralPost", "msg", msg)
@@ -142,11 +137,6 @@ func (p *Plugin) handleAlert(args *model.CommandArgs) (*model.CommandResponse, *
 	post := &model.Post{
 		ChannelId: p.ChannelID,
 		UserId:    p.BotUserID,
-		Props: map[string]interface{}{
-			"from_webhook":      "true",
-			"override_username": alertManagerUsername,
-			"override_icon_url": alertManagerIconURL,
-		},
 	}
 
 	model.ParseSlackAttachment(post, attachments)
@@ -175,11 +165,6 @@ func (p *Plugin) handleStatus(args *model.CommandArgs) (*model.CommandResponse, 
 	post := &model.Post{
 		ChannelId: p.ChannelID,
 		UserId:    p.BotUserID,
-		Props: map[string]interface{}{
-			"from_webhook":      "true",
-			"override_username": alertManagerUsername,
-			"override_icon_url": alertManagerIconURL,
-		},
 	}
 
 	model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
@@ -273,11 +258,6 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (*model.CommandResp
 	post := &model.Post{
 		ChannelId: p.ChannelID,
 		UserId:    p.BotUserID,
-		Props: map[string]interface{}{
-			"from_webhook":      "true",
-			"override_username": alertManagerUsername,
-			"override_icon_url": alertManagerIconURL,
-		},
 	}
 
 	model.ParseSlackAttachment(post, attachments)
