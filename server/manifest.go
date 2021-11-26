@@ -4,6 +4,6 @@ var manifest = struct {
 	Id      string
 	Version string
 }{
-	Id:      "com.cpanato.alertmanager",
+	Id:      "alertmanager",
 	Version: "0.1.0",
 }

@@ -1,12 +1,17 @@
 {
-    "id": "com.cpanato.alertmanager",
+    "id": "alertmanager",
     "name": "AlertManager",
     "description": "Alermanager plugin for Mattermost, you can receive alerts and interact with alertmanager.",
-    "version": "0.1.0",
+    "homepage_url": "https://github.com/cpanato/mattermost-plugin-alertmanager",
+    "support_url": "https://github.com/cpanato/mattermost-plugin-alertmanager/issues",
+    "version": "0.2.0",
+    "min_server_version": "5.37.0",
     "server": {
         "executables": {
             "linux-amd64": "server/dist/plugin-linux-amd64",
+            "linux-arm64": "server/dist/plugin-linux-arm64",
             "darwin-amd64": "server/dist/plugin-darwin-amd64",
+            "darwin-arm64": "server/dist/plugin-darwin-arm64",
             "windows-amd64": "server/dist/plugin-windows-amd64.exe"
         }
     },

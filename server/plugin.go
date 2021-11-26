@@ -6,9 +6,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/mattermost/mattermost-server/v5/model"
-	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/pkg/errors"
+
+	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost-server/v6/plugin"
 )
 
 const (
@@ -54,7 +55,7 @@ func (p *Plugin) OnActivate() error {
 		channelToCreate := &model.Channel{
 			Name:        p.configuration.Channel,
 			DisplayName: p.configuration.Channel,
-			Type:        model.CHANNEL_OPEN,
+			Type:        model.ChannelTypeOpen,
 			TeamId:      team.Id,
 			CreatorId:   p.BotUserID,
 		}
@@ -76,6 +77,12 @@ func (p *Plugin) OnActivate() error {
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("Mattermost AlertManager Plugin"))
+		return
+	}
+
 	token := r.URL.Query().Get("token")
 	if token == "" || strings.Compare(token, p.configuration.Token) != 0 {
 		errorMessage := "Invalid or missing token"

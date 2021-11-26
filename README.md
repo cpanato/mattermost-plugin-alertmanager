@@ -1,4 +1,4 @@
-# AlertManager Plugin ![CircleCI branch](https://img.shields.io/circleci/project/github/cpanato/mattermost-plugin-alertmanager/master.svg)
+# AlertManager Plugin
 
 This plugin is the [AlertManager](https://github.com/prometheus/alertmanager) bot for Mattermost.
 
@@ -18,7 +18,7 @@ TODO:
   - List expired silences
 
 
-**Supported Mattermost Server Versions: 5.6+**
+**Supported Mattermost Server Versions: 5.37+**
 
 ## Installation
 
@@ -37,7 +37,7 @@ Next, to configure the plugin, follow these steps:
 10. Go to your Alermanager configuration, paste the following webhook URL and specfiy the name of the service and the token you copied in step 9.
 
 ```
-https://SITEURL/plugins/com.cpanato.alertmanager/api/webhook?token=TOKEN
+https://SITEURL/plugins/alertmanager/api/webhook?token=TOKEN
 ```
 
 ## Plugin in Action

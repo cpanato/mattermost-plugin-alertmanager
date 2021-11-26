@@ -24,5 +24,4 @@ receivers:
 - name: 'mattermost-alertmananger'
   webhook_configs:
   - send_resolved: true
-    url: 'https://cpanato.eu.ngrok.io/plugins/com.cpanato.alertmanager/api/webhook?token=vXihlhFruTx-xPecIg24R3u2Ibfi_btz'
-
+    url: 'https://cpanato-outrider.eu.ngrok.io/plugins/alertmanager/api/webhook?token=FR2kDopHGgydR7Zhtyrxvz-8a6Pjavai'

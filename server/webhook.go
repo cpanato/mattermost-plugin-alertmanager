@@ -8,13 +8,9 @@ import (
 	"time"
 
 	"github.com/hako/durafmt"
-	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/prometheus/alertmanager/notify/webhook"
-)
 
-const (
-	alertManagerIconURL  = "https://upload.wikimedia.org/wikipedia/commons/3/38/Prometheus_software_logo.svg"
-	alertManagerUsername = "AlertManager Bot"
+	"github.com/mattermost/mattermost-server/v6/model"
 )
 
 func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
