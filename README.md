@@ -27,13 +27,13 @@ TODO:
 
 Next, to configure the plugin, follow these steps:
 
-3. After you've uploaded the plugin in **System Console > Plugins > Management**, go to the plugin's settings page at **System Console > Plugins > AlertManager**.
+3. After you've uploaded the plugin in **System Console > Plugins > Management**, go to the plugin's settings page at **System Console > Plugins > AlertManager`**.
 4. Specify the team and channel to send messages to. For each, use the URL of the team or channel instead of their respective display names.
-5. Select the username that this plugin is attached to. You may optionally create a new user account for your AlertManager plugin, which can act as a bot account posting AlertManager updates to a Mattermost channel.
+5. Select the username that this plugin is attached to. You may optionally create a new user account for your AlertManager` plugin, which can act as a bot account posting AlertManager` updates to a Mattermost channel.
 6. Specify the AlertManager Server URL
 7. Generate the Token that will be use to validate the requests
 8. Hit **Save**.
-9. Next, copy the **Token** above the **Save** button, which is used to configure the plugin for your AlertManager account.
+9. Next, copy the **Token** above the **Save** button, which is used to configure the plugin for your AlertManager` account.
 10. Go to your Alermanager configuration, paste the following webhook URL and specfiy the name of the service and the token you copied in step 9.
 
 ```
