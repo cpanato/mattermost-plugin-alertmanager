@@ -86,18 +86,6 @@ func getCommandResponse(responseType, text string) *model.CommandResponse {
 	}
 }
 
-func (p *Plugin) sendEphemeralMessage(msg, channelID, userID string) {
-	ephemeralPost := &model.Post{
-		Message:   msg,
-		ChannelId: channelID,
-		UserId:    userID,
-	}
-
-	p.API.LogDebug("Will send an ephemeralPost", "msg", msg)
-
-	p.API.SendEphemeralPost(userID, ephemeralPost)
-}
-
 func (p *Plugin) handleAlert(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
 	alerts, err := alertmanager.ListAlerts(p.configuration.AlertManagerURL)
 	if err != nil {
@@ -237,7 +225,7 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (*model.CommandResp
 					"silence_id": silence.ID,
 					"user_id":    args.UserId,
 				},
-				URL: fmt.Sprintf("http://localhost%v/plugins/%v/api/expire?token=%s", siteURLPort, manifest.Id, p.configuration.Token),
+				URL: fmt.Sprintf("http://localhost%v/plugins/%v/api/expire?token=%s", siteURLPort, manifest.ID, p.configuration.Token),
 			},
 		}
 		attachment := &model.SlackAttachment{

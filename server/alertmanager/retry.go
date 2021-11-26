@@ -31,8 +31,7 @@ func httpRetry(method string, url string) (*http.Response, error) {
 		}
 
 		req = req.WithContext(ctx)
-
-		resp, err = http.DefaultClient.Do(req)
+		resp, err = http.DefaultClient.Do(req) // nolint: bodyclose
 		if err != nil {
 			return err
 		}
@@ -54,5 +53,6 @@ func httpRetry(method string, url string) (*http.Response, error) {
 	if errRetry := backoff.Retry(fn, httpBackoff()); errRetry != nil {
 		return nil, errRetry
 	}
+
 	return resp, err
 }

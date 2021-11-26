@@ -6,10 +6,7 @@ import (
 	"os"
 )
 
-const header = `%s = []byte{%s}
-`
-
-func writeString(file *os.File, str string) {
+func writeString(file *os.File, str string) { // nolint: interfacer
 	_, err := file.WriteString(str)
 	if err != nil {
 		panic(err)

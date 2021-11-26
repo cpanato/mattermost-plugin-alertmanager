@@ -36,15 +36,15 @@ func ListSilences(alertmanagerURL string) ([]types.Silence, error) {
 // DeleteSilence delete a silence by ID.
 func ExpireSilence(silenceID, alertmanagerURL string) error {
 	if silenceID == "" {
-		return fmt.Errorf("Silence ID cannot be empty")
+		return fmt.Errorf("silence ID cannot be empty")
 	}
 
 	expireSilence := fmt.Sprintf("%s/api/v2/silence/%s", alertmanagerURL, silenceID)
 	resp, err := httpRetry(http.MethodDelete, expireSilence)
-	defer resp.Body.Close()
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {

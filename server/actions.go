@@ -10,11 +10,13 @@ import (
 	"github.com/cpanato/mattermost-plugin-alertmanager/server/alertmanager"
 )
 
+const aliceBlue = "#F0F8FF"
+
 func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request) {
 	p.API.LogInfo("Received expire silence action")
 
 	var action *Action
-	json.NewDecoder(r.Body).Decode(&action)
+	_ = json.NewDecoder(r.Body).Decode(&action)
 
 	if action == nil {
 		encodeEphermalMessage(w, "We could not decode the action")
@@ -35,7 +37,7 @@ func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updatePost := &model.Post{}
-	updateAttachment := &model.SlackAttachment{}
+
 	attachments := []*model.SlackAttachment{}
 	actionPost, errPost := p.API.GetPost(action.PostID)
 	if errPost != nil {
@@ -48,15 +50,17 @@ func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request) {
 			}
 			for _, actionItem := range attachment.Actions {
 				if actionItem.Integration.Context["silence_id"] == action.Context.SilenceID {
-					updateAttachment = attachment
+					updateAttachment := attachment
 					updateAttachment.Actions = nil
-					updateAttachment.Color = "#F0F8FF"
+					updateAttachment.Color = aliceBlue
 					var silenceMsg string
 					userName, errUser := p.API.GetUser(action.UserID)
 					if errUser != nil {
-						silenceMsg = fmt.Sprintf("Silence expired")
+						silenceMsg = "Silence expired"
+					} else {
+						silenceMsg = fmt.Sprintf("Silence expired by %s", userName.Username)
 					}
-					silenceMsg = fmt.Sprintf("Silence expired by %s", userName.Username)
+
 					field := &model.SlackAttachmentField{
 						Title: "Expired by",
 						Value: silenceMsg,
@@ -67,7 +71,6 @@ func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request) {
 				} else {
 					attachments = append(attachments, attachment)
 				}
-
 			}
 		}
 		retainedProps := []string{"override_username", "override_icon_url"}
@@ -88,8 +91,8 @@ func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+
 	encodeEphermalMessage(w, silenceDeletedMsg)
-	return
 }
 
 func encodeEphermalMessage(w http.ResponseWriter, message string) {
@@ -98,5 +101,5 @@ func encodeEphermalMessage(w http.ResponseWriter, message string) {
 		"ephemeral_text": message,
 	}
 
-	json.NewEncoder(w).Encode(payload)
+	_ = json.NewEncoder(w).Encode(payload)
 }

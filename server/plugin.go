@@ -19,14 +19,14 @@ const (
 type Plugin struct {
 	plugin.MattermostPlugin
 
-	// configurationLock synchronizes access to the configuration.
-	configurationLock sync.RWMutex
-
 	// configuration is the active plugin configuration. Consult getConfiguration and
 	// setConfiguration for usage.
 	configuration *configuration
 	BotUserID     string
 	ChannelID     string
+
+	// configurationLock synchronizes access to the configuration.
+	configurationLock sync.RWMutex
 }
 
 func (p *Plugin) OnDeactivate() error {
@@ -50,6 +50,8 @@ func (p *Plugin) OnActivate() error {
 		return err
 	}
 
+	_ = p.API.RegisterCommand(getCommand())
+
 	channel, err := p.API.GetChannelByName(team.Id, p.configuration.Channel, false)
 	if err != nil && err.StatusCode == http.StatusNotFound {
 		channelToCreate := &model.Channel{
@@ -61,18 +63,17 @@ func (p *Plugin) OnActivate() error {
 		}
 
 		newChannel, errChannel := p.API.CreateChannel(channelToCreate)
-		if err != nil {
+		if errChannel != nil {
 			return errChannel
 		}
+
 		p.ChannelID = newChannel.Id
+		return nil
 	} else if err != nil {
 		return err
-	} else {
-		p.ChannelID = channel.Id
 	}
 
-	p.API.RegisterCommand(getCommand())
-
+	p.ChannelID = channel.Id
 	return nil
 }
 
@@ -101,19 +102,19 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 
 func (p *Plugin) IsValid(configuration *configuration) error {
 	if configuration.Team == "" {
-		return fmt.Errorf("Must set a Team")
+		return fmt.Errorf("must set a Team")
 	}
 
 	if configuration.Channel == "" {
-		return fmt.Errorf("Must set a Channel")
+		return fmt.Errorf("must set a Channel")
 	}
 
 	if configuration.Token == "" {
-		return fmt.Errorf("Must set a Token")
+		return fmt.Errorf("must set a Token")
 	}
 
 	if configuration.AlertManagerURL == "" {
-		return fmt.Errorf("Must set the AlertManager URL")
+		return fmt.Errorf("must set the AlertManager URL")
 	}
 
 	return nil

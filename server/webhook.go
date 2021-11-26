@@ -96,5 +96,5 @@ func setColor(impact string) string {
 		return val
 	}
 
-	return "#F0F8FF"
+	return aliceBlue
 }
