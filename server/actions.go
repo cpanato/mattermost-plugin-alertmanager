@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/mattermost/mattermost-server/v6/model"
+
 	"github.com/cpanato/mattermost-plugin-alertmanager/server/alertmanager"
-	"github.com/mattermost/mattermost-server/model"
 )
 
 func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request) {

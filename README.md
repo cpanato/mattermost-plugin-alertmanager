@@ -1,4 +1,4 @@
-# AlertManager Plugin ![CircleCI branch](https://img.shields.io/circleci/project/github/cpanato/mattermost-plugin-alertmanager/master.svg)
+# AlertManager Plugin
 
 This plugin is the [AlertManager](https://github.com/prometheus/alertmanager) bot for Mattermost.
 
@@ -20,7 +20,7 @@ TODO:
   - Allow multiple webhooks/channels
 
 
-**Supported Mattermost Server Versions: 5.6+**
+**Supported Mattermost Server Versions: 5.37+**
 
 ## Installation
 
@@ -29,17 +29,17 @@ TODO:
 
 Next, to configure the plugin, follow these steps:
 
-3. After you've uploaded the plugin in **System Console > Plugins > Management**, go to the plugin's settings page at **System Console > Plugins > Statuspage**.
+3. After you've uploaded the plugin in **System Console > Plugins > Management**, go to the plugin's settings page at **System Console > Plugins > AlertManager`**.
 4. Specify the team and channel to send messages to. For each, use the URL of the team or channel instead of their respective display names.
-5. Select the username that this plugin is attached to. You may optionally create a new user account for your Statuspage plugin, which can act as a bot account posting Statuspage updates to a Mattermost channel.
+5. Select the username that this plugin is attached to. You may optionally create a new user account for your AlertManager` plugin, which can act as a bot account posting AlertManager` updates to a Mattermost channel.
 6. Specify the AlertManager Server URL
 7. Generate the Token that will be use to validate the requests
 8. Hit **Save**.
-9. Next, copy the **Token** above the **Save** button, which is used to configure the plugin for your Statuspage account.
+9. Next, copy the **Token** above the **Save** button, which is used to configure the plugin for your AlertManager` account.
 10. Go to your Alermanager configuration, paste the following webhook URL and specfiy the name of the service and the token you copied in step 9.
 
 ```
-https://SITEURL/plugins/com.cpanato.alertmanager/api/webhook?token=TOKEN
+https://SITEURL/plugins/alertmanager/api/webhook?token=TOKEN
 ```
 
 ## Plugin in Action

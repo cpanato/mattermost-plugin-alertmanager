@@ -1,0 +1,24 @@
+project_name: mattermost-plugin-alertmanager
+
+dist: goreleaser
+
+builds:
+  - skip: true
+
+before:
+  hooks:
+  - make dist
+
+checksum:
+  extra_files:
+    - glob: ./dist/alertmanager-*.tar.gz
+
+release:
+  prerelease: allow
+  draft: true # allow for manual edits
+  github:
+    owner: cpanato
+    name: mattermost-plugin-alertmanager
+
+  extra_files:
+    - glob: ./dist/alertmanager-*.tar.gz

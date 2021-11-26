@@ -19,7 +19,6 @@ import (
 // copy appropriate for your types.
 type configuration struct {
 	Token           string
-	Username        string
 	Channel         string
 	Team            string
 	AlertManagerURL string

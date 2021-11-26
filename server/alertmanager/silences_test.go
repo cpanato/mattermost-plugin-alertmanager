@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prometheus/alertmanager/types"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/prometheus/alertmanager/types"
 )
 
 func TestResolved(t *testing.T) {
