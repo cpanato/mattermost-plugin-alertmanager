@@ -128,7 +128,7 @@ func (p *Plugin) ensureBotExists() error {
 
 	if botUserIDBytes == nil {
 		// Create a bot since one doesn't exist
-		p.API.LogDebug("Creating bot for chuck norris facts plugin")
+		p.API.LogDebug("Creating bot for AlertManager plugin")
 
 		bot, err := p.API.CreateBot(&model.Bot{
 			Username:    "alertmanagerbot",
