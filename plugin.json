@@ -21,15 +21,15 @@
         "settings": [
         {
             "key": "Team",
-            "display_name": "Team:",
+            "display_name": "Team Name:",
             "type": "text",
-            "help_text": "Team you want to send messages to. Use team URL, instead of a display name."
+            "help_text": "Team you want to send messages to. Use the team name such as 'my-team', instead of the display name."
         },
         {
             "key": "Channel",
-            "display_name": "Channel:",
+            "display_name": "Channel Name:",
             "type": "text",
-            "help_text": "Channel you want to send messages to. Use channel URL such as 'town-square', instead of a display name. If you specify a channel that does not exist, this plugin creates a new channel with that name."
+            "help_text": "Channel you want to send messages to. Use the channel name such as 'town-square', instead of the display name. If you specify a channel that does not exist, this plugin creates a new channel with that name."
         },
         {
             "key": "Token",
@@ -41,7 +41,7 @@
             "key": "AlertManagerURL",
             "display_name": "AlertManager URL:",
             "type": "text",
-            "help_text": "AlertManager URL."
+            "help_text": "The URL of your AlertManager instance, e.g. 'http://alertmanager.example.com/'"
         }]
     }
 }
