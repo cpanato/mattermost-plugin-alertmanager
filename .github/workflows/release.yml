@@ -24,7 +24,11 @@ jobs:
         with:
           go-version: 1.17.x
 
-      - uses: sigstore/cosign-installer@main
+      - name: install head cosign
+        run: go install github.com/sigstore/cosign@main
+
+      - name: check cosign
+        run: cosign version
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2

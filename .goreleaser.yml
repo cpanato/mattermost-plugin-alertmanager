@@ -9,7 +9,7 @@ before:
   hooks:
     - make clean
     - make dist
-    - sh -c "cosign sign-blob --timeout 360s dist/alertmanager-{{ .Version }}.tar.gz > dist/alertmanager-{{ .Version }}.sig"
+    - sh -c "cosign sign-blob --timeout 360s --output dist/alertmanager-{{ .Version }}.sig dist/alertmanager-{{ .Version }}.tar.gz"
 
 checksum:
   extra_files:
