@@ -7,12 +7,13 @@ builds:
 
 before:
   hooks:
-  - make dist
-  - sh -c "echo $COSIGN_PWD | cosign sign-blob --key cosign.key --output dist/alertmanager-{{ .Version }}.sig dist/alertmanager-{{ .Version }}.tar.gz
+    - make clean
+    - make dist
+    - sh -c "cosign sign-blob dist/alertmanager-{{ .Version }}.tar.gz > dist/alertmanager-{{ .Version }}.sig"
 
 checksum:
   extra_files:
-    - glob: ./dist/alertmanager-*.tar.gz
+    - glob: ./dist/alertmanager-{{ .Version }}.tar.gz
 
 release:
   prerelease: allow
@@ -22,5 +23,5 @@ release:
     name: mattermost-plugin-alertmanager
 
   extra_files:
-    - glob: ./dist/alertmanager-*.tar.gz
-    - glob: ./dist/alertmanager-*.sig
+    - glob: ./dist/alertmanager-{{ .Version }}.tar.gz
+    - glob: ./dist/alertmanager-{{ .Version }}.sig

@@ -119,6 +119,7 @@ endif
 ## Builds and bundles the plugin.
 .PHONY: dist
 dist:	server webapp bundle
+	rm -rf dist/alertmanager
 
 ## Builds and installs the plugin to a server.
 .PHONY: deploy
