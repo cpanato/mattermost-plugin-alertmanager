@@ -8,6 +8,7 @@ builds:
 before:
   hooks:
   - make dist
+  - sh -c "echo $COSIGN_PWD | cosign sign-blob --key cosign.key --output dist/alertmanager-{{ .Version }}.sig dist/alertmanager-{{ .Version }}.tar.gz
 
 checksum:
   extra_files:
@@ -22,3 +23,4 @@ release:
 
   extra_files:
     - glob: ./dist/alertmanager-*.tar.gz
+    - glob: ./dist/alertmanager-*.sig
