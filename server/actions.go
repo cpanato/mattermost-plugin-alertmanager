@@ -12,7 +12,7 @@ import (
 
 const aliceBlue = "#F0F8FF"
 
-func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request, alertConfig *alertConfig) {
 	p.API.LogInfo("Received expire silence action")
 
 	var action *Action
@@ -30,7 +30,7 @@ func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request) {
 
 	silenceDeletedMsg := fmt.Sprintf("Silence %s expired.", action.Context.SilenceID)
 
-	err := alertmanager.ExpireSilence(action.Context.SilenceID, p.configuration.AlertManagerURL)
+	err := alertmanager.ExpireSilence(action.Context.SilenceID, alertConfig.AlertManagerURL)
 	if err != nil {
 		msg := fmt.Sprintf("failed to expire the silence: %v", err)
 		encodeEphermalMessage(w, msg)

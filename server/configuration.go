@@ -17,17 +17,24 @@ import (
 //
 // If you add non-reference types to your configuration struct, be sure to rewrite Clone as a deep
 // copy appropriate for your types.
-type configuration struct {
+type alertConfig struct {
 	Token           string
 	Channel         string
 	Team            string
 	AlertManagerURL string
 }
 
+type configuration struct {
+	alertConfigs map[int]alertConfig
+}
+
 // Clone shallow copies the configuration. Your implementation may require a deep copy if
 // your configuration has reference types.
 func (c *configuration) Clone() *configuration {
-	var clone = *c
+	var clone configuration
+	for k, v := range c.alertConfigs {
+		clone.alertConfigs[k] = v
+	}
 	return &clone
 }
 
@@ -39,7 +46,9 @@ func (p *Plugin) getConfiguration() *configuration {
 	defer p.configurationLock.RUnlock()
 
 	if p.configuration == nil {
-		return &configuration{}
+		return &configuration{
+			alertConfigs: make(map[int]alertConfig),
+		}
 	}
 
 	return p.configuration

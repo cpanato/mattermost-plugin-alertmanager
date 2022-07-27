@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -23,7 +22,9 @@ type Plugin struct {
 	// setConfiguration for usage.
 	configuration *configuration
 	BotUserID     string
-	ChannelID     string
+
+	// key - channel name from config, value - existing or created channel id received from api
+	ChannelIds map[string]string
 
 	// configurationLock synchronizes access to the configuration.
 	configurationLock sync.RWMutex
@@ -35,49 +36,51 @@ func (p *Plugin) OnDeactivate() error {
 }
 
 func (p *Plugin) OnActivate() error {
-	configuration := p.getConfiguration()
-
-	if err := p.IsValid(configuration); err != nil {
-		return err
-	}
-
+	p.ChannelIds = make(map[string]string)
 	if err := p.ensureBotExists(); err != nil {
 		return errors.Wrap(err, "failed to ensure bot user exists")
 	}
 
-	team, err := p.API.GetTeamByName(p.configuration.Team)
-	if err != nil {
-		return err
+	configuration := p.getConfiguration()
+	for _, alertConfig := range configuration.alertConfigs {
+		if err := p.IsValid(&alertConfig); err != nil {
+			return err
+		}
+
+		team, err := p.API.GetTeamByName(alertConfig.Team)
+		if err != nil {
+			return err
+		}
+
+		channel, err := p.API.GetChannelByName(team.Id, alertConfig.Channel, false)
+		if err != nil && err.StatusCode == http.StatusNotFound {
+			channelToCreate := &model.Channel{
+				Name:        alertConfig.Channel,
+				DisplayName: alertConfig.Channel,
+				Type:        model.ChannelTypeOpen,
+				TeamId:      team.Id,
+				CreatorId:   p.BotUserID,
+			}
+
+			newChannel, errChannel := p.API.CreateChannel(channelToCreate)
+			if errChannel != nil {
+				return errChannel
+			}
+
+			p.ChannelIds[alertConfig.Channel] = newChannel.Id
+		} else if err != nil {
+			return err
+		} else {
+			p.ChannelIds[alertConfig.Channel] = channel.Id
+		}
 	}
 
 	_ = p.API.RegisterCommand(getCommand())
 
-	channel, err := p.API.GetChannelByName(team.Id, p.configuration.Channel, false)
-	if err != nil && err.StatusCode == http.StatusNotFound {
-		channelToCreate := &model.Channel{
-			Name:        p.configuration.Channel,
-			DisplayName: p.configuration.Channel,
-			Type:        model.ChannelTypeOpen,
-			TeamId:      team.Id,
-			CreatorId:   p.BotUserID,
-		}
-
-		newChannel, errChannel := p.API.CreateChannel(channelToCreate)
-		if errChannel != nil {
-			return errChannel
-		}
-
-		p.ChannelID = newChannel.Id
-		return nil
-	} else if err != nil {
-		return err
-	}
-
-	p.ChannelID = channel.Id
 	return nil
 }
 
-func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("Mattermost AlertManager Plugin"))
@@ -85,22 +88,30 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 	}
 
 	token := r.URL.Query().Get("token")
-	if token == "" || strings.Compare(token, p.configuration.Token) != 0 {
+	if token == "" {
 		errorMessage := "Invalid or missing token"
 		http.Error(w, errorMessage, http.StatusBadRequest)
 		return
 	}
-	switch r.URL.Path {
-	case "/api/webhook":
-		p.handleWebhook(w, r)
-	case "/api/expire":
-		p.handleExpireAction(w, r)
-	default:
-		http.NotFound(w, r)
+	for _, alertConfig := range p.configuration.alertConfigs {
+		if token == alertConfig.Token {
+			switch r.URL.Path {
+			case "/api/webhook":
+				p.handleWebhook(w, r, &alertConfig)
+			case "/api/expire":
+				p.handleExpireAction(w, r, &alertConfig)
+			default:
+				http.NotFound(w, r)
+			}
+			return
+		}
 	}
+
+	errorMessage := "Invalid or missing token"
+	http.Error(w, errorMessage, http.StatusBadRequest)
 }
 
-func (p *Plugin) IsValid(configuration *configuration) error {
+func (p *Plugin) IsValid(configuration *alertConfig) error {
 	if configuration.Team == "" {
 		return fmt.Errorf("must set a Team")
 	}
