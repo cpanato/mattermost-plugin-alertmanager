@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 )
 
-func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request, alertConfig *alertConfig) {
 	p.API.LogInfo("Received alertmanager notification")
 
 	var message webhook.Message
@@ -68,7 +68,7 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	post := &model.Post{
-		ChannelId: p.ChannelID,
+		ChannelId: p.ChannelIds[alertConfig.Channel],
 		UserId:    p.BotUserID,
 	}
 
