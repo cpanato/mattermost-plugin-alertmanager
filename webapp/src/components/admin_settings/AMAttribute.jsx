@@ -77,7 +77,7 @@ const AMAttribute = (props) => {
     const regenerateToken = (e) => {
         e.preventDefault();
 
-        const token =  crypto.randomBytes(256).toString('base64').substring(0, 32);
+        const token = crypto.randomBytes(256).toString('base64').substring(0, 32).replaceAll('+', '-').replaceAll('/', '_');
 
         let newSettings = {...settings};
         newSettings = {...newSettings, token: token};
