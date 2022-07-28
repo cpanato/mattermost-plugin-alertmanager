@@ -2,6 +2,7 @@ package main
 
 import (
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -18,6 +19,7 @@ import (
 // If you add non-reference types to your configuration struct, be sure to rewrite Clone as a deep
 // copy appropriate for your types.
 type alertConfig struct {
+	Id              string
 	Token           string
 	Channel         string
 	Team            string
@@ -25,7 +27,7 @@ type alertConfig struct {
 }
 
 type configuration struct {
-	AlertConfigs map[int]alertConfig
+	AlertConfigs map[string]alertConfig
 }
 
 // Clone shallow copies the configuration. Your implementation may require a deep copy if
@@ -47,7 +49,7 @@ func (p *Plugin) getConfiguration() *configuration {
 
 	if p.configuration == nil {
 		return &configuration{
-			AlertConfigs: make(map[int]alertConfig),
+			AlertConfigs: make(map[string]alertConfig),
 		}
 	}
 
@@ -83,16 +85,22 @@ func (p *Plugin) setConfiguration(configuration *configuration) {
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
 func (p *Plugin) OnConfigurationChange() error {
-	var configuration = &configuration{
-		AlertConfigs: make(map[int]alertConfig),
+	var configuration = configuration{
+		AlertConfigs: make(map[string]alertConfig),
 	}
 
 	// Load the public configuration fields from the Mattermost server configuration.
-	if err := p.API.LoadPluginConfiguration(configuration); err != nil {
+	if err := p.API.LoadPluginConfiguration(&configuration); err != nil {
 		return errors.Wrap(err, "failed to load plugin configuration")
 	}
 
-	p.setConfiguration(configuration)
+	for id, alertConfig := range configuration.AlertConfigs {
+		alertConfig.Id = id
+		alertConfig.AlertManagerURL = strings.TrimRight(alertConfig.AlertManagerURL, `/`)
+		configuration.AlertConfigs[id] = alertConfig
+	}
+
+	p.setConfiguration(&configuration)
 
 	return p.OnActivate()
 }

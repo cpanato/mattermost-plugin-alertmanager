@@ -118,6 +118,7 @@ func (p *Plugin) handleAlert(_ *model.CommandArgs) (*model.CommandResponse, *mod
 			fields = addFields(fields, "Resolved", strconv.FormatBool(alert.Resolved()), false)
 			fields = addFields(fields, "Start At", alert.StartsAt.String(), false)
 			fields = addFields(fields, "Ended At", alert.EndsAt.String(), false)
+			fields = addFields(fields, "AlertManagerPluginId", alertConfig.Id, false)
 			attachment := &model.SlackAttachment{
 				Title:  alert.Name(),
 				Fields: fields,
@@ -238,6 +239,7 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (*model.CommandResp
 			}
 			fields = addFields(fields, "Comments", silence.Comment, false)
 			fields = addFields(fields, "Created by", silence.CreatedBy, false)
+			fields = addFields(fields, "AlertManagerPluginId", alertConfig.Id, false)
 
 			color := "#808080" // gray
 			if string(silence.Status.State) == "active" {
@@ -313,22 +315,17 @@ func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (*model.CommandRes
 		return getCommandResponse(model.CommandResponseTypeEphemeral, "Command requires 2 parameters: ALERT_MANAGER_PLUGIN_ID and SILENCE_ID"), nil
 	}
 
-	alertManagerPluginId, err := strconv.Atoi(parameters[0])
-	if err != nil {
-		msg := fmt.Sprintf("failed to parse int from ALERT_MANAGER_PLUGIN_ID (%q): %v", parameters[0], err)
-		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
-	}
-	if alertManagerPluginId >= len(p.configuration.AlertConfigs) {
-		msg := fmt.Sprintf("Missing such ALERT_MANAGER_PLUGIN_ID (%d): %v", alertManagerPluginId, err)
-		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
-	}
-
-	err = alertmanager.ExpireSilence(parameters[1], p.configuration.AlertConfigs[alertManagerPluginId].AlertManagerURL)
-	if err != nil {
-		msg := fmt.Sprintf("failed to expire the silence: %v", err)
+	if alertConfig, ok := p.configuration.AlertConfigs[parameters[0]]; ok {
+		err := alertmanager.ExpireSilence(parameters[1], alertConfig.AlertManagerURL)
+		if err != nil {
+			msg := fmt.Sprintf("failed to expire the silence: %v", err)
+			return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
+		}
+	} else {
+		msg := fmt.Sprintf("Missing such ALERT_MANAGER_PLUGIN_ID (%s)", parameters[0])
 		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
 	}
 
-	silenceDeleted := fmt.Sprintf("Silence %s expired.", parameters[0])
+	silenceDeleted := fmt.Sprintf("Silence %s expired.", parameters[1])
 	return getCommandResponse(model.CommandResponseTypeInChannel, silenceDeleted), nil
 }

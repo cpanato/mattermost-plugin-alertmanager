@@ -53,6 +53,7 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request, alertConf
 
 		/* second field: Labels only */
 		msg = ""
+		alert.Labels["AlertManagerPluginId"] = alertConfig.Id
 		for k, v := range alert.Labels {
 			msg = fmt.Sprintf("%s**%s:** %s\n", msg, strings.Title(k), v)
 		}
