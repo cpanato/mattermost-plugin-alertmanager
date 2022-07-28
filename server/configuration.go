@@ -25,15 +25,15 @@ type alertConfig struct {
 }
 
 type configuration struct {
-	alertConfigs map[int]alertConfig
+	AlertConfigs map[int]alertConfig
 }
 
 // Clone shallow copies the configuration. Your implementation may require a deep copy if
 // your configuration has reference types.
 func (c *configuration) Clone() *configuration {
 	var clone configuration
-	for k, v := range c.alertConfigs {
-		clone.alertConfigs[k] = v
+	for k, v := range c.AlertConfigs {
+		clone.AlertConfigs[k] = v
 	}
 	return &clone
 }
@@ -47,7 +47,7 @@ func (p *Plugin) getConfiguration() *configuration {
 
 	if p.configuration == nil {
 		return &configuration{
-			alertConfigs: make(map[int]alertConfig),
+			AlertConfigs: make(map[int]alertConfig),
 		}
 	}
 
@@ -83,7 +83,9 @@ func (p *Plugin) setConfiguration(configuration *configuration) {
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
 func (p *Plugin) OnConfigurationChange() error {
-	var configuration = new(configuration)
+	var configuration = &configuration{
+		AlertConfigs: make(map[int]alertConfig),
+	}
 
 	// Load the public configuration fields from the Mattermost server configuration.
 	if err := p.API.LoadPluginConfiguration(configuration); err != nil {

@@ -42,7 +42,7 @@ func (p *Plugin) OnActivate() error {
 	}
 
 	configuration := p.getConfiguration()
-	for _, alertConfig := range configuration.alertConfigs {
+	for _, alertConfig := range configuration.AlertConfigs {
 		if err := p.IsValid(&alertConfig); err != nil {
 			return err
 		}
@@ -93,7 +93,7 @@ func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Req
 		http.Error(w, errorMessage, http.StatusBadRequest)
 		return
 	}
-	for _, alertConfig := range p.configuration.alertConfigs {
+	for _, alertConfig := range p.configuration.AlertConfigs {
 		if token == alertConfig.Token {
 			switch r.URL.Path {
 			case "/api/webhook":

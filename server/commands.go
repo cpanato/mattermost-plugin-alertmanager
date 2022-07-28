@@ -90,7 +90,7 @@ func (p *Plugin) handleAlert(_ *model.CommandArgs) (*model.CommandResponse, *mod
 	var alertsCount = 0
 	var errors []string
 	fmt.Printf("%+v\n", p.configuration)
-	for _, alertConfig := range p.configuration.alertConfigs {
+	for _, alertConfig := range p.configuration.AlertConfigs {
 		alerts, err := alertmanager.ListAlerts(alertConfig.AlertManagerURL)
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("AlertManagerURL %q: failed to list alerts... %v", alertConfig.AlertManagerURL, err))
@@ -152,7 +152,7 @@ func (p *Plugin) handleAlert(_ *model.CommandArgs) (*model.CommandResponse, *mod
 
 func (p *Plugin) handleStatus(_ *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
 	var errors []string
-	for _, alertConfig := range p.configuration.alertConfigs {
+	for _, alertConfig := range p.configuration.AlertConfigs {
 		status, err := alertmanager.Status(alertConfig.AlertManagerURL)
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("AlertManagerURL %q: failed to get status... %v", alertConfig.AlertManagerURL, err))
@@ -192,7 +192,7 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (*model.CommandResp
 	var errors []string
 	var silencesCount = 0
 	var pendingSilencesCount = 0
-	for _, alertConfig := range p.configuration.alertConfigs {
+	for _, alertConfig := range p.configuration.AlertConfigs {
 		silences, err := alertmanager.ListSilences(alertConfig.AlertManagerURL)
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("AlertManagerURL %q: failed to get silences... %v", alertConfig.AlertManagerURL, err))
@@ -318,12 +318,12 @@ func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (*model.CommandRes
 		msg := fmt.Sprintf("failed to parse int from ALERT_MANAGER_PLUGIN_ID (%q): %v", parameters[0], err)
 		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
 	}
-	if alertManagerPluginId >= len(p.configuration.alertConfigs) {
+	if alertManagerPluginId >= len(p.configuration.AlertConfigs) {
 		msg := fmt.Sprintf("Missing such ALERT_MANAGER_PLUGIN_ID (%d): %v", alertManagerPluginId, err)
 		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
 	}
 
-	err = alertmanager.ExpireSilence(parameters[1], p.configuration.alertConfigs[alertManagerPluginId].AlertManagerURL)
+	err = alertmanager.ExpireSilence(parameters[1], p.configuration.AlertConfigs[alertManagerPluginId].AlertManagerURL)
 	if err != nil {
 		msg := fmt.Sprintf("failed to expire the silence: %v", err)
 		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
