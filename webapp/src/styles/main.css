@@ -12,6 +12,10 @@
     height: 29px;
     width: 30px;
     margin-bottom: 15px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
 }
 .alert-setting {
     display: flex;
@@ -40,7 +44,7 @@
 .no-settings-alert {
     margin-bottom: 15px;
 }
-.alert-setting__id {
+.alert-setting__order-number {
     font-weight: 600;
     font-size: 16px;
 }

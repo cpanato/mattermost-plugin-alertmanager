@@ -20,7 +20,7 @@
     },
     "settings_schema": {
         "settings": [{
-            "key": "CustomAttributes",
+            "key": "alertConfigs",
             "type": "custom",
             "display_name": "Alert manager settings:"
         }]

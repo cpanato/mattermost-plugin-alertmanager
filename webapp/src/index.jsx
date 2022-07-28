@@ -12,7 +12,7 @@ export default class Plugin {
             );
         }
 
-        registry.registerAdminConsoleCustomSetting('CustomAttributes', CustomAttributesSettingsWrapper);
+        registry.registerAdminConsoleCustomSetting('alertConfigs', CustomAttributesSettingsWrapper);
     }
 }
 

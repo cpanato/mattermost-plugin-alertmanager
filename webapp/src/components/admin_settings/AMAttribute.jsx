@@ -3,71 +3,71 @@ import crypto from 'crypto';
 
 const AMAttribute = (props) => {
     const initialSettings = props.attributes === undefined || Object.keys(props.attributes).length === 0 ? {
-        id: props.id,
-        teamName: "",
-        channelName: "",
+        alertmanagerurl: "",
+        channel: "",
+        team: "",
         token: "",
-        url: "",
-        error: "",
+
     } : {
-        id: props.id,
-        teamName: props.attributes.teamName ? props.attributes.teamName: "",
-        channelName: props.attributes.channelName? props.attributes.channelName : "",
+        alertmanagerurl: props.attributes.alertmanagerurl? props.attributes.alertmanagerurl: "",
+        channel: props.attributes.channel? props.attributes.channel : "",
+        team: props.attributes.team ? props.attributes.team: "",
         token: props.attributes.token? props.attributes.token: "",
-        url: props.attributes.url? props.attributes.url: "",
-        error: "",
+
     };
 
-    const [settings, setSettings] = useState(initialSettings);
-    const [ hasError, setHasError ] = useState(false);
+    const initErrors = {
+        teamError: false,
+        channelError: false,
+        urlError: false
+    };
 
-    /*useEffect(() => {
-
-    });*/
+    const [ settings, setSettings ] = useState(initialSettings);
+    const [ hasError, setHasError ] = useState(initErrors);
 
     const handleTeamNameInput = (e) => {
         let newSettings = {...settings};
-        setHasError(false);
 
         if (!e.target.value || e.target.value.trim() === '') {
-            newSettings = {...newSettings, error: 'Attribute name cannot be empty.'};
-            setHasError(true);
+            setHasError({...hasError, teamError: true});
+        } else {
+            setHasError({...hasError, teamError: false});
         }
 
-        newSettings = {...newSettings, teamName: e.target.value};
+        newSettings = {...newSettings, team: e.target.value};
 
         setSettings(newSettings);
-        props.onChange({id: newSettings.id, attributes: newSettings});
+        props.onChange({id: props.id, attributes: newSettings});
     }
 
     const handleChannelNameInput = (e) => {
         let newSettings = {...settings};
-        setHasError(false);
 
         if (!e.target.value || e.target.value.trim() === '') {
-            newSettings = {...newSettings, error: 'Attribute name cannot be empty.'}
-            setHasError(true);
+            setHasError({...hasError, channelError: true});
+        } else {
+            setHasError({...hasError, channelError: false});
         }
 
-        newSettings = {...newSettings, channelName: e.target.value};
+        newSettings = {...newSettings, channel: e.target.value};
 
         setSettings(newSettings);
-        props.onChange({id: newSettings.id, attributes: newSettings});
+        props.onChange({id: props.id, attributes: newSettings});
     }
 
     const handleURLInput = (e) => {
         let newSettings = {...settings};
-        setHasError(false);
 
         if (!e.target.value || e.target.value.trim() === '') {
-            newSettings = {...newSettings, error: 'Attribute name cannot be empty.'}
-            setHasError(true);
+            setHasError({...hasError, urlError: true});
+        } else {
+            setHasError({...hasError, urlError: false});
         }
 
-        newSettings = {...newSettings, url: e.target.value};
+        newSettings = {...newSettings, alertmanagerurl: e.target.value};
 
         setSettings(newSettings);
-        props.onChange({id: newSettings.id, attributes: newSettings});
+        props.onChange({id: props.id, attributes: newSettings});
     }
 
     const handleDelete = (e) => {
@@ -78,13 +78,12 @@ const AMAttribute = (props) => {
         e.preventDefault();
 
         const token =  crypto.randomBytes(256).toString('base64').substring(0, 32);
-        //const token = generateRandomToken(32);
 
         let newSettings = {...settings};
         newSettings = {...newSettings, token: token};
 
         setSettings(newSettings);
-        props.onChange({id: settings.id, attributes:newSettings});
+        props.onChange({id: props.id, attributes:newSettings});
     }
 
     const generateSimpleStringInputSetting = ( title, settingName, onChangeFunction, helpTextJSX) => {
@@ -137,18 +136,22 @@ const AMAttribute = (props) => {
     </div>);
     }
 
+    const hasAnyError = () => {
+        return Object.values(hasError).findIndex(item => item) !== -1;
+    }
+
     return (
-        <div id={`setting_${props.id}`} className={`alert-setting ${hasError ? 'alert-setting--with-error' : ''}`}>
+        <div id={`setting_${props.id}`} className={`alert-setting ${hasAnyError() ? 'alert-setting--with-error' : ''}`}>
             <div className='alert-setting__controls'>
-                <div className='alert-setting__id'>{`#${props.id}`}</div>
+                <div className='alert-setting__order-number'>{`#${props.id}`}</div>
                 <div id={`delete_${props.id}`} className='delete-setting btn btn-default' onClick={handleDelete}>{` X `}</div>
             </div>
-            { hasError && <div className='alert-setting__error-text'>{`${settings.error}`}</div> }
+            { hasAnyError() && <div className='alert-setting__error-text'>{`Attribute cannot be empty.`}</div> }
             <div className='alert-setting__content'>
                 <div>
                     { generateSimpleStringInputSetting(
                         "Team Name:",
-                        "teamName",
+                        "team",
                         handleTeamNameInput,
                         (<span>{"Team you want to send messages to. Use the team name such as \'my-team\', instead of the display name."}</span>)
                         )
@@ -156,7 +159,7 @@ const AMAttribute = (props) => {
 
                     { generateSimpleStringInputSetting(
                         "Channel Name:",
-                        "channelName",
+                        "channel",
                         handleChannelNameInput,
                         (<span>{"Channel you want to send messages to. Use the channel name such as 'town-square', instead of the display name. If you specify a channel that does not exist, this plugin creates a new channel with that name."}</span>)
                         )
@@ -173,7 +176,7 @@ const AMAttribute = (props) => {
 
                     { generateSimpleStringInputSetting(
                         "AlertManager URL:",
-                        "url",
+                        "alertmanagerurl",
                         handleURLInput,
                         (<span>{"The URL of your AlertManager instance, e.g. \'"}<a href="http://alertmanager.example.com/" rel="noopener noreferrer" target="_blank">{"http://alertmanager.example.com/"}</a>{"\'"}</span>)
                         )
@@ -185,19 +188,10 @@ const AMAttribute = (props) => {
 }
 
 AMAttribute.propTypes = {
-    id: PropTypes.number.isRequired,
+    id: PropTypes.string.isRequired,
+    orderNumber: PropTypes.number.isRequired,
     attributes: PropTypes.object,
     onChange: PropTypes.func.isRequired
 }
 
 export default AMAttribute;
-
-function generateRandomToken(tokenLength){
-    let token = "";
-
-    let availableSymbols = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for (let i = 0; i < tokenLength; i++) {
-        token += availableSymbols.charAt(Math.floor(Math.random() * availableSymbols.length));
-    }
-    return token;
-}

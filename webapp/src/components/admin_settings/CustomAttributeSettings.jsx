@@ -14,19 +14,27 @@ const CustomAttributesSettings = (props) => {
     const [ settingIdToDelete, setSettingIdToDelete ] = useState();
 
     useEffect(() => {
-        console.log('initial props');
-        console.log(props.value);
-
         setSettings(initSettings(props.value));
-    }, []);
+    },[]);
 
     const initSettings = (newSettings) => {
-        if(!!newSettings && newSettings.length > 0) {
-            return new Map(newSettings.map((a, index) => [index, a]));
+        if(!!newSettings) {
+            if(Object.keys(newSettings).length != 0) {
+                const newEntries = Object.entries(newSettings);
+
+                return new Map(newEntries);
+            }
         }
 
-        const emptySetting = [{ text: '' }];
-        return new Map(emptySetting.map((a, index) => [index, a]));
+        const emptySetting = { '0' : {
+                alertmanagerurl: '',
+                channel: '',
+                team: '',
+                token: ''
+            }
+        };
+
+        return new Map(Object.entries(emptySetting));
     }
 
     const renderSettings = () => {
@@ -36,19 +44,19 @@ const CustomAttributesSettings = (props) => {
             );
         }
 
-        return Array.from(settings, ([key, value]) => {
+        return Array.from(settings, ([key, value], index) => {
             return (
                 <AMAttribute
                     key={key}
                     id={key}
+                    orderNumber={index}
                     onChange={handleChange}
                     onDelete={triggerDeleteModal}
                     attributes = {{
-                        teamName: value.teamName,
-                        channelName: value.channelName,
+                        team: value.team,
+                        channel: value.channel,
                         token: value.token,
-                        url: value.url,
-                        error: value.error
+                        alertmanagerurl: value.alertmanagerurl
                     }}
                 />
             );
@@ -61,21 +69,21 @@ const CustomAttributesSettings = (props) => {
 
         setSettings(newSettings);
 
-        props.onChange(props.id, Array.from(newSettings.values()));
+        props.onChange(props.id, Object.fromEntries(newSettings));
         props.setSaveNeeded();
     }
 
     const handleAddButtonClick = (e) => {
         e.preventDefault();
 
-        const nextKey = [...settings.keys()].pop()+1;
+        const nextKey = settings.size === 0 ? '0' :(parseInt([...settings.keys()].pop()) + 1).toString();
 
         let newSettings = settings;
         newSettings.set(nextKey, {});
 
         setSettings(newSettings);
 
-        props.onChange(props.id, Array.from(newSettings.values()));
+        props.onChange(props.id, Object.fromEntries(newSettings));
         props.setSaveNeeded();
     }
 
@@ -86,7 +94,7 @@ const CustomAttributesSettings = (props) => {
         setSettings(newSettings);
         setIsDeleteModalShown(false);
 
-        props.onChange(props.id, Array.from(newSettings.values()));
+        props.onChange(props.id, Object.fromEntries(newSettings));
         props.setSaveNeeded();
     }
 
