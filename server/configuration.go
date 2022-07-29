@@ -2,6 +2,7 @@ package main
 
 import (
 	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -17,17 +18,25 @@ import (
 //
 // If you add non-reference types to your configuration struct, be sure to rewrite Clone as a deep
 // copy appropriate for your types.
-type configuration struct {
+type alertConfig struct {
+	Id              string
 	Token           string
 	Channel         string
 	Team            string
 	AlertManagerURL string
 }
 
+type configuration struct {
+	AlertConfigs map[string]alertConfig
+}
+
 // Clone shallow copies the configuration. Your implementation may require a deep copy if
 // your configuration has reference types.
 func (c *configuration) Clone() *configuration {
-	var clone = *c
+	var clone configuration
+	for k, v := range c.AlertConfigs {
+		clone.AlertConfigs[k] = v
+	}
 	return &clone
 }
 
@@ -39,7 +48,9 @@ func (p *Plugin) getConfiguration() *configuration {
 	defer p.configurationLock.RUnlock()
 
 	if p.configuration == nil {
-		return &configuration{}
+		return &configuration{
+			AlertConfigs: make(map[string]alertConfig),
+		}
 	}
 
 	return p.configuration
@@ -74,14 +85,22 @@ func (p *Plugin) setConfiguration(configuration *configuration) {
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
 func (p *Plugin) OnConfigurationChange() error {
-	var configuration = new(configuration)
+	var configuration = configuration{
+		AlertConfigs: make(map[string]alertConfig),
+	}
 
 	// Load the public configuration fields from the Mattermost server configuration.
-	if err := p.API.LoadPluginConfiguration(configuration); err != nil {
+	if err := p.API.LoadPluginConfiguration(&configuration); err != nil {
 		return errors.Wrap(err, "failed to load plugin configuration")
 	}
 
-	p.setConfiguration(configuration)
+	for id, alertConfig := range configuration.AlertConfigs {
+		alertConfig.Id = id
+		alertConfig.AlertManagerURL = strings.TrimRight(alertConfig.AlertManagerURL, `/`)
+		configuration.AlertConfigs[id] = alertConfig
+	}
+
+	p.setConfiguration(&configuration)
 
 	return p.OnActivate()
 }

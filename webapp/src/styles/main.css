@@ -1,0 +1,50 @@
+.alert-setting__wrapper {
+    display: flex;
+    flex-direction: column;
+}
+.setting-row {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+}
+.delete-setting {
+    cursor: pointer;
+    height: 29px;
+    width: 30px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+}
+.alert-setting {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    padding: 15px;
+    margin-bottom: 15px;
+}
+.alert-setting__controls {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+.alert-setting--with-error {
+    border: 1px solid red;
+}
+.alert-setting__error-text {
+    color: red;
+    font-weight: 600;
+}
+.alert-setting__content {
+    display: flex;
+    flex-direction: column;
+}
+.no-settings-alert {
+    margin-bottom: 15px;
+}
+.alert-setting__order-number {
+    font-weight: 600;
+    font-size: 16px;
+}

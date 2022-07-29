@@ -15,33 +15,14 @@
             "windows-amd64": "server/dist/plugin-windows-amd64.exe"
         }
     },
+    "webapp": {
+        "bundle_path": "webapp/dist/main.js"
+    },
     "settings_schema": {
-        "header": "",
-        "footer": "",
-        "settings": [
-        {
-            "key": "Team",
-            "display_name": "Team Name:",
-            "type": "text",
-            "help_text": "Team you want to send messages to. Use the team name such as 'my-team', instead of the display name."
-        },
-        {
-            "key": "Channel",
-            "display_name": "Channel Name:",
-            "type": "text",
-            "help_text": "Channel you want to send messages to. Use the channel name such as 'town-square', instead of the display name. If you specify a channel that does not exist, this plugin creates a new channel with that name."
-        },
-        {
-            "key": "Token",
-            "display_name": "Token:",
-            "type": "generated",
-            "help_text": "The token used to configure the webhook for AlertManager. The token is validates for each webhook request by the Mattermost server."
-        },
-        {
-            "key": "AlertManagerURL",
-            "display_name": "AlertManager URL:",
-            "type": "text",
-            "help_text": "The URL of your AlertManager instance, e.g. 'http://alertmanager.example.com/'"
+        "settings": [{
+            "key": "alertConfigs",
+            "type": "custom",
+            "display_name": "Alert manager settings:"
         }]
     }
 }

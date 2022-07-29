@@ -13,7 +13,7 @@ import (
 	"github.com/mattermost/mattermost-server/v6/model"
 )
 
-func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request, alertConfig *alertConfig) {
 	p.API.LogInfo("Received alertmanager notification")
 
 	var message webhook.Message
@@ -53,6 +53,7 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 
 		/* second field: Labels only */
 		msg = ""
+		alert.Labels["AlertManagerPluginId"] = alertConfig.Id
 		for k, v := range alert.Labels {
 			msg = fmt.Sprintf("%s**%s:** %s\n", msg, strings.Title(k), v)
 		}
@@ -68,7 +69,7 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request) {
 	}
 
 	post := &model.Post{
-		ChannelId: p.ChannelID,
+		ChannelId: p.ChannelIds[alertConfig.Channel],
 		UserId:    p.BotUserID,
 	}
 
