@@ -19,7 +19,7 @@ import (
 // If you add non-reference types to your configuration struct, be sure to rewrite Clone as a deep
 // copy appropriate for your types.
 type alertConfig struct {
-	Id              string
+	ID              string
 	Token           string
 	Channel         string
 	Team            string
@@ -85,22 +85,22 @@ func (p *Plugin) setConfiguration(configuration *configuration) {
 
 // OnConfigurationChange is invoked when configuration changes may have been made.
 func (p *Plugin) OnConfigurationChange() error {
-	var configuration = configuration{
+	var configurationInstance = configuration{
 		AlertConfigs: make(map[string]alertConfig),
 	}
 
 	// Load the public configuration fields from the Mattermost server configuration.
-	if err := p.API.LoadPluginConfiguration(&configuration); err != nil {
+	if err := p.API.LoadPluginConfiguration(&configurationInstance); err != nil {
 		return errors.Wrap(err, "failed to load plugin configuration")
 	}
 
-	for id, alertConfig := range configuration.AlertConfigs {
-		alertConfig.Id = id
-		alertConfig.AlertManagerURL = strings.TrimRight(alertConfig.AlertManagerURL, `/`)
-		configuration.AlertConfigs[id] = alertConfig
+	for id, alertConfigInstance := range configurationInstance.AlertConfigs {
+		alertConfigInstance.ID = id
+		alertConfigInstance.AlertManagerURL = strings.TrimRight(alertConfigInstance.AlertManagerURL, `/`)
+		configurationInstance.AlertConfigs[id] = alertConfigInstance
 	}
 
-	p.setConfiguration(&configuration)
+	p.setConfiguration(&configurationInstance)
 
 	return p.OnActivate()
 }

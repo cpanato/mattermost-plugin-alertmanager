@@ -21,10 +21,10 @@ type Plugin struct {
 	// configuration is the active plugin configuration. Consult getConfiguration and
 	// setConfiguration for usage.
 	configuration *configuration
-	BotUserID     string
 
 	// key - channel name from config, value - existing or created channel id received from api
 	ChannelIds map[string]string
+	BotUserID  string
 
 	// configurationLock synchronizes access to the configuration.
 	configurationLock sync.RWMutex
@@ -43,7 +43,7 @@ func (p *Plugin) OnActivate() error {
 
 	configuration := p.getConfiguration()
 	for _, alertConfig := range configuration.AlertConfigs {
-		if err := p.IsValid(&alertConfig); err != nil {
+		if err := p.IsValid(alertConfig); err != nil {
 			return err
 		}
 
@@ -53,23 +53,25 @@ func (p *Plugin) OnActivate() error {
 		}
 
 		channel, err := p.API.GetChannelByName(team.Id, alertConfig.Channel, false)
-		if err != nil && err.StatusCode == http.StatusNotFound {
-			channelToCreate := &model.Channel{
-				Name:        alertConfig.Channel,
-				DisplayName: alertConfig.Channel,
-				Type:        model.ChannelTypeOpen,
-				TeamId:      team.Id,
-				CreatorId:   p.BotUserID,
-			}
+		if err != nil {
+			if err.StatusCode == http.StatusNotFound {
+				channelToCreate := &model.Channel{
+					Name:        alertConfig.Channel,
+					DisplayName: alertConfig.Channel,
+					Type:        model.ChannelTypeOpen,
+					TeamId:      team.Id,
+					CreatorId:   p.BotUserID,
+				}
 
-			newChannel, errChannel := p.API.CreateChannel(channelToCreate)
-			if errChannel != nil {
-				return errChannel
-			}
+				newChannel, errChannel := p.API.CreateChannel(channelToCreate)
+				if errChannel != nil {
+					return errChannel
+				}
 
-			p.ChannelIds[alertConfig.Channel] = newChannel.Id
-		} else if err != nil {
-			return err
+				p.ChannelIds[alertConfig.Channel] = newChannel.Id
+			} else {
+				return err
+			}
 		} else {
 			p.ChannelIds[alertConfig.Channel] = channel.Id
 		}
@@ -87,19 +89,19 @@ func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	invalidOrMissingTokenErr := "Invalid or missing token"
 	token := r.URL.Query().Get("token")
 	if token == "" {
-		errorMessage := "Invalid or missing token"
-		http.Error(w, errorMessage, http.StatusBadRequest)
+		http.Error(w, invalidOrMissingTokenErr, http.StatusBadRequest)
 		return
 	}
 	for _, alertConfig := range p.configuration.AlertConfigs {
 		if token == alertConfig.Token {
 			switch r.URL.Path {
 			case "/api/webhook":
-				p.handleWebhook(w, r, &alertConfig)
+				p.handleWebhook(w, r, alertConfig)
 			case "/api/expire":
-				p.handleExpireAction(w, r, &alertConfig)
+				p.handleExpireAction(w, r, alertConfig)
 			default:
 				http.NotFound(w, r)
 			}
@@ -107,11 +109,10 @@ func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Req
 		}
 	}
 
-	errorMessage := "Invalid or missing token"
-	http.Error(w, errorMessage, http.StatusBadRequest)
+	http.Error(w, invalidOrMissingTokenErr, http.StatusBadRequest)
 }
 
-func (p *Plugin) IsValid(configuration *alertConfig) error {
+func (p *Plugin) IsValid(configuration alertConfig) error {
 	if configuration.Team == "" {
 		return fmt.Errorf("must set a Team")
 	}

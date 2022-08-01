@@ -7,13 +7,16 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"github.com/hako/durafmt"
 	"github.com/prometheus/alertmanager/notify/webhook"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 )
 
-func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request, alertConfig *alertConfig) {
+func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request, alertConfig alertConfig) {
 	p.API.LogInfo("Received alertmanager notification")
 
 	var message webhook.Message
@@ -34,7 +37,7 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request, alertConf
 		/* first field: Annotations, Start/End, Source */
 		var msg string
 		for k, v := range alert.Annotations {
-			msg = fmt.Sprintf("%s**%s:** %s\n", msg, strings.Title(k), v)
+			msg = fmt.Sprintf("%s**%s:** %s\n", msg, cases.Title(language.Und, cases.NoLower).String(k), v)
 		}
 		msg = fmt.Sprintf("%s \n", msg)
 		msg = fmt.Sprintf("%s**Started at:** %s (%s ago)\n", msg,
@@ -53,9 +56,9 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request, alertConf
 
 		/* second field: Labels only */
 		msg = ""
-		alert.Labels["AlertManagerPluginId"] = alertConfig.Id
+		alert.Labels["AlertManagerPluginId"] = alertConfig.ID
 		for k, v := range alert.Labels {
-			msg = fmt.Sprintf("%s**%s:** %s\n", msg, strings.Title(k), v)
+			msg = fmt.Sprintf("%s**%s:** %s\n", msg, cases.Title(language.Und, cases.NoLower).String(k), v)
 		}
 		fields = append(fields, &model.SlackAttachmentField{
 			Value: msg,
