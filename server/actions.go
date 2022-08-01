@@ -12,7 +12,7 @@ import (
 
 const aliceBlue = "#F0F8FF"
 
-func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request, alertConfig *alertConfig) {
+func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request, alertConfig alertConfig) {
 	p.API.LogInfo("Received expire silence action")
 
 	var action *Action

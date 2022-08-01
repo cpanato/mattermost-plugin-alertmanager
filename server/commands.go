@@ -118,7 +118,7 @@ func (p *Plugin) handleAlert(_ *model.CommandArgs) (*model.CommandResponse, *mod
 			fields = addFields(fields, "Resolved", strconv.FormatBool(alert.Resolved()), false)
 			fields = addFields(fields, "Start At", alert.StartsAt.String(), false)
 			fields = addFields(fields, "Ended At", alert.EndsAt.String(), false)
-			fields = addFields(fields, "AlertManagerPluginId", alertConfig.Id, false)
+			fields = addFields(fields, "AlertManagerPluginId", alertConfig.ID, false)
 			attachment := &model.SlackAttachment{
 				Title:  alert.Name(),
 				Fields: fields,
@@ -239,7 +239,7 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (*model.CommandResp
 			}
 			fields = addFields(fields, "Comments", silence.Comment, false)
 			fields = addFields(fields, "Created by", silence.CreatedBy, false)
-			fields = addFields(fields, "AlertManagerPluginId", alertConfig.Id, false)
+			fields = addFields(fields, "AlertManagerPluginId", alertConfig.ID, false)
 
 			color := "#808080" // gray
 			if string(silence.Status.State) == "active" {
@@ -315,8 +315,8 @@ func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (*model.CommandRes
 		return getCommandResponse(model.CommandResponseTypeEphemeral, "Command requires 2 parameters: ALERT_MANAGER_PLUGIN_ID and SILENCE_ID"), nil
 	}
 
-	if alertConfig, ok := p.configuration.AlertConfigs[parameters[0]]; ok {
-		err := alertmanager.ExpireSilence(parameters[1], alertConfig.AlertManagerURL)
+	if config, ok := p.configuration.AlertConfigs[parameters[0]]; ok {
+		err := alertmanager.ExpireSilence(parameters[1], config.AlertManagerURL)
 		if err != nil {
 			msg := fmt.Sprintf("failed to expire the silence: %v", err)
 			return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
