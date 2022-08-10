@@ -20,7 +20,7 @@ const (
 	helpMsg = `run:
 	/alertmanager alerts - to list the existing alerts
 	/alertmanager silences - to list the existing silences
-	/alertmanager expire_silence <SILENCE_ID> - to expire the specified silence
+	/alertmanager expire_silence <ALERT_MANAGER_PLUGIN_ID> <SILENCE_ID> - to expire the specified silence
 	/alertmanager status - to list the version and uptime of the Alertmanager instance
 	/alertmanager help - to get this help
 	`
@@ -37,7 +37,7 @@ func getCommand() *model.Command {
 	}
 }
 
-func (p *Plugin) ExecuteCommand(c *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+func (p *Plugin) ExecuteCommand(_ *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
 	split := strings.Fields(args.Command)
 	command := split[0]
 	action := ""
@@ -86,192 +86,246 @@ func getCommandResponse(responseType, text string) *model.CommandResponse {
 	}
 }
 
-func (p *Plugin) handleAlert(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	alerts, err := alertmanager.ListAlerts(p.configuration.AlertManagerURL)
-	if err != nil {
-		msg := fmt.Sprintf("failed to list alerts... %v", err)
+func (p *Plugin) handleAlert(_ *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+	var alertsCount = 0
+	var errors []string
+	fmt.Printf("%+v\n", p.configuration)
+	for _, alertConfig := range p.configuration.AlertConfigs {
+		alerts, err := alertmanager.ListAlerts(alertConfig.AlertManagerURL)
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("AlertManagerURL %q: failed to list alerts... %v", alertConfig.AlertManagerURL, err))
+			continue
+		}
+		if len(alerts) == 0 {
+			continue
+		}
+		alertsCount += len(alerts)
+
+		for _, alert := range alerts {
+			fmt.Println(alert.Alert)
+		}
+
+		attachments := make([]*model.SlackAttachment, 0)
+		for _, alert := range alerts {
+			var fields []*model.SlackAttachmentField
+			fields = addFields(fields, "Status", string(alert.Status()), false)
+			for k, v := range alert.Annotations {
+				fields = addFields(fields, string(k), string(v), true)
+			}
+			for k, v := range alert.Labels {
+				fields = addFields(fields, string(k), string(v), true)
+			}
+			fields = addFields(fields, "Resolved", strconv.FormatBool(alert.Resolved()), false)
+			fields = addFields(fields, "Start At", alert.StartsAt.String(), false)
+			fields = addFields(fields, "Ended At", alert.EndsAt.String(), false)
+			fields = addFields(fields, "AlertManagerPluginId", alertConfig.ID, false)
+			attachment := &model.SlackAttachment{
+				Title:  alert.Name(),
+				Fields: fields,
+				Color:  setColor(string(alert.Status())),
+			}
+			attachments = append(attachments, attachment)
+		}
+
+		post := &model.Post{
+			ChannelId: p.ChannelIds[alertConfig.Channel],
+			UserId:    p.BotUserID,
+		}
+
+		model.ParseSlackAttachment(post, attachments)
+		if _, appErr := p.API.CreatePost(post); appErr != nil {
+			errors = append(errors, fmt.Sprintf("Channel %q: Error creating the Alert post", alertConfig.Channel))
+			continue
+		}
+	}
+
+	if len(errors) > 0 {
+		msg := strings.Join(errors, "\n")
 		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
 	}
 
-	if len(alerts) == 0 {
+	if alertsCount == 0 {
 		return getCommandResponse(model.CommandResponseTypeInChannel, "No alerts right now! :tada:"), nil
 	}
 
-	for _, alert := range alerts {
-		fmt.Println(alert.Alert)
-	}
-
-	attachments := make([]*model.SlackAttachment, 0)
-	for _, alert := range alerts {
-		var fields []*model.SlackAttachmentField
-		fields = addFields(fields, "Status", string(alert.Status()), false)
-		for k, v := range alert.Annotations {
-			fields = addFields(fields, string(k), string(v), true)
-		}
-		for k, v := range alert.Labels {
-			fields = addFields(fields, string(k), string(v), true)
-		}
-		fields = addFields(fields, "Resolved", strconv.FormatBool(alert.Resolved()), false)
-		fields = addFields(fields, "Start At", alert.StartsAt.String(), false)
-		fields = addFields(fields, "Ended At", alert.EndsAt.String(), false)
-		attachment := &model.SlackAttachment{
-			Title:  alert.Name(),
-			Fields: fields,
-			Color:  setColor(string(alert.Status())),
-		}
-		attachments = append(attachments, attachment)
-	}
-
-	post := &model.Post{
-		ChannelId: p.ChannelID,
-		UserId:    p.BotUserID,
-	}
-
-	model.ParseSlackAttachment(post, attachments)
-	if _, appErr := p.API.CreatePost(post); appErr != nil {
-		return getCommandResponse(model.CommandResponseTypeEphemeral, "Error creating the Alert post"), nil
-	}
 	return &model.CommandResponse{}, nil
 }
 
-func (p *Plugin) handleStatus(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	status, err := alertmanager.Status(p.configuration.AlertManagerURL)
-	if err != nil {
-		msg := fmt.Sprintf("failed to get status... %v", err)
+func (p *Plugin) handleStatus(_ *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+	var errors []string
+	for _, alertConfig := range p.configuration.AlertConfigs {
+		status, err := alertmanager.Status(alertConfig.AlertManagerURL)
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("AlertManagerURL %q: failed to get status... %v", alertConfig.AlertManagerURL, err))
+			continue
+		}
+
+		uptime := durafmt.Parse(time.Since(status.Uptime)).String()
+		var fields []*model.SlackAttachmentField
+		fields = addFields(fields, "AlertManager Version ", status.VersionInfo.Version, false)
+		fields = addFields(fields, "AlertManager Uptime", uptime, false)
+
+		attachment := &model.SlackAttachment{
+			Fields: fields,
+		}
+
+		post := &model.Post{
+			ChannelId: p.ChannelIds[alertConfig.Channel],
+			UserId:    p.BotUserID,
+		}
+
+		model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
+		if _, appErr := p.API.CreatePost(post); appErr != nil {
+			errors = append(errors, fmt.Sprintf("Channel %q: Error creating the Status post", alertConfig.Channel))
+			continue
+		}
+	}
+
+	if len(errors) > 0 {
+		msg := strings.Join(errors, "\n")
 		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
 	}
 
-	uptime := durafmt.Parse(time.Since(status.Uptime)).String()
-	var fields []*model.SlackAttachmentField
-	fields = addFields(fields, "AlertManager Version ", status.VersionInfo.Version, false)
-	fields = addFields(fields, "AlertManager Uptime", uptime, false)
-
-	attachment := &model.SlackAttachment{
-		Fields: fields,
-	}
-
-	post := &model.Post{
-		ChannelId: p.ChannelID,
-		UserId:    p.BotUserID,
-	}
-
-	model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
-	if _, appErr := p.API.CreatePost(post); appErr != nil {
-		return getCommandResponse(model.CommandResponseTypeEphemeral, "Error creating the Status post"), nil
-	}
 	return &model.CommandResponse{}, nil
 }
 
 func (p *Plugin) handleListSilences(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
-	silences, err := alertmanager.ListSilences(p.configuration.AlertManagerURL)
-	if err != nil {
-		msg := fmt.Sprintf("failed to get silences... %v", err)
-		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
+	var errors []string
+	var silencesCount = 0
+	var pendingSilencesCount = 0
+	for _, alertConfig := range p.configuration.AlertConfigs {
+		silences, err := alertmanager.ListSilences(alertConfig.AlertManagerURL)
+		if err != nil {
+			errors = append(errors, fmt.Sprintf("AlertManagerURL %q: failed to get silences... %v", alertConfig.AlertManagerURL, err))
+			continue
+		}
+		if len(silences) == 0 {
+			continue
+		}
+		silencesCount += len(silences)
+
+		attachments := make([]*model.SlackAttachment, 0)
+		for _, silence := range silences {
+			if string(silence.Status.State) == "expired" {
+				continue
+			}
+			var fields []*model.SlackAttachmentField
+			var emoji, matchers, duration string
+			for _, m := range silence.Matchers {
+				if m.Name == "alertname" {
+					fields = addFields(fields, "Alert Name", m.Value, false)
+				} else {
+					matchers += fmt.Sprintf(`%s="%s"`, m.Name, m.Value)
+				}
+			}
+			fields = addFields(fields, "State", string(silence.Status.State), false)
+			fields = addFields(fields, "Matchers", matchers, false)
+			resolved := alertmanager.Resolved(silence)
+			if !resolved {
+				emoji = "🔕"
+				duration = fmt.Sprintf(
+					"**Started**: %s ago\n**Ends:** %s\n",
+					durafmt.Parse(time.Since(silence.StartsAt)),
+					durafmt.Parse(time.Since(silence.EndsAt)),
+				)
+				fields = addFields(fields, emoji, duration, false)
+			} else {
+				duration = fmt.Sprintf(
+					"**Ended**: %s ago\n**Duration**: %s",
+					durafmt.Parse(time.Since(silence.EndsAt)),
+					durafmt.Parse(silence.EndsAt.Sub(silence.StartsAt)),
+				)
+				fields = addFields(fields, "", duration, false)
+			}
+			fields = addFields(fields, "Comments", silence.Comment, false)
+			fields = addFields(fields, "Created by", silence.CreatedBy, false)
+			fields = addFields(fields, "AlertManagerPluginId", alertConfig.ID, false)
+
+			color := "#808080" // gray
+			if string(silence.Status.State) == "active" {
+				color = "#008000" // green
+			}
+
+			config := p.API.GetConfig()
+			siteURLPort := *config.ServiceSettings.ListenAddress
+			expireSilenceAction := &model.PostAction{
+				Name: "Expire Silence",
+				Type: model.PostActionTypeButton,
+				Integration: &model.PostActionIntegration{
+					Context: map[string]interface{}{
+						"action":     "expire",
+						"silence_id": silence.ID,
+						"user_id":    args.UserId,
+					},
+					URL: fmt.Sprintf("http://localhost%v/plugins/%v/api/expire?token=%s", siteURLPort, manifest.ID, alertConfig.Token),
+				},
+			}
+			attachment := &model.SlackAttachment{
+				Title:  silence.ID,
+				Fields: fields,
+				Color:  color,
+				Actions: []*model.PostAction{
+					expireSilenceAction,
+				},
+			}
+			attachments = append(attachments, attachment)
+		}
+
+		if len(attachments) == 0 {
+			continue
+		}
+		pendingSilencesCount += len(attachments)
+
+		post := &model.Post{
+			ChannelId: p.ChannelIds[alertConfig.Channel],
+			UserId:    p.BotUserID,
+		}
+
+		model.ParseSlackAttachment(post, attachments)
+		if _, appErr := p.API.CreatePost(post); appErr != nil {
+			errors = append(errors, fmt.Sprintf("Channel %q: Error creating the Alert post", alertConfig.Channel))
+			continue
+		}
 	}
 
-	if len(silences) == 0 {
+	if silencesCount == 0 {
 		return getCommandResponse(model.CommandResponseTypeInChannel, "No silences right now."), nil
 	}
 
-	attachments := make([]*model.SlackAttachment, 0)
-	for _, silence := range silences {
-		if string(silence.Status.State) == "expired" {
-			continue
-		}
-		var fields []*model.SlackAttachmentField
-		var emoji, matchers, duration string
-		for _, m := range silence.Matchers {
-			if m.Name == "alertname" {
-				fields = addFields(fields, "Alert Name", m.Value, false)
-			} else {
-				matchers += fmt.Sprintf(`%s="%s"`, m.Name, m.Value)
-			}
-		}
-		fields = addFields(fields, "State", string(silence.Status.State), false)
-		fields = addFields(fields, "Matchers", matchers, false)
-		resolved := alertmanager.Resolved(silence)
-		if !resolved {
-			emoji = "🔕"
-			duration = fmt.Sprintf(
-				"**Started**: %s ago\n**Ends:** %s\n",
-				durafmt.Parse(time.Since(silence.StartsAt)),
-				durafmt.Parse(time.Since(silence.EndsAt)),
-			)
-			fields = addFields(fields, emoji, duration, false)
-		} else {
-			duration = fmt.Sprintf(
-				"**Ended**: %s ago\n**Duration**: %s",
-				durafmt.Parse(time.Since(silence.EndsAt)),
-				durafmt.Parse(silence.EndsAt.Sub(silence.StartsAt)),
-			)
-			fields = addFields(fields, "", duration, false)
-		}
-		fields = addFields(fields, "Comments", silence.Comment, false)
-		fields = addFields(fields, "Created by", silence.CreatedBy, false)
-
-		color := "#808080" // gray
-		if string(silence.Status.State) == "active" {
-			color = "#008000" // green
-		}
-
-		config := p.API.GetConfig()
-		siteURLPort := *config.ServiceSettings.ListenAddress
-		expireSilenceAction := &model.PostAction{
-			Name: "Expire Silence",
-			Type: model.PostActionTypeButton,
-			Integration: &model.PostActionIntegration{
-				Context: map[string]interface{}{
-					"action":     "expire",
-					"silence_id": silence.ID,
-					"user_id":    args.UserId,
-				},
-				URL: fmt.Sprintf("http://localhost%v/plugins/%v/api/expire?token=%s", siteURLPort, manifest.ID, p.configuration.Token),
-			},
-		}
-		attachment := &model.SlackAttachment{
-			Title:  silence.ID,
-			Fields: fields,
-			Color:  color,
-			Actions: []*model.PostAction{
-				expireSilenceAction,
-			},
-		}
-		attachments = append(attachments, attachment)
-	}
-
-	if len(attachments) == 0 {
+	if pendingSilencesCount == 0 {
 		return getCommandResponse(model.CommandResponseTypeInChannel, "No active or pending silences right now."), nil
 	}
 
-	post := &model.Post{
-		ChannelId: p.ChannelID,
-		UserId:    p.BotUserID,
+	if len(errors) > 0 {
+		msg := strings.Join(errors, "\n")
+		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
 	}
 
-	model.ParseSlackAttachment(post, attachments)
-	if _, appErr := p.API.CreatePost(post); appErr != nil {
-		return getCommandResponse(model.CommandResponseTypeEphemeral, "Error creating the Alert post"), nil
-	}
 	return &model.CommandResponse{}, nil
 }
 
 func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
 	split := strings.Fields(args.Command)
-	parameters := []string{}
+	var parameters []string
 	if len(split) > 2 {
 		parameters = split[2:]
 	}
 
-	if len(parameters) != 1 {
-		return getCommandResponse(model.CommandResponseTypeEphemeral, "Missing silence ID"), nil
+	if len(parameters) != 2 {
+		return getCommandResponse(model.CommandResponseTypeEphemeral, "Command requires 2 parameters: ALERT_MANAGER_PLUGIN_ID and SILENCE_ID"), nil
 	}
 
-	err := alertmanager.ExpireSilence(parameters[0], p.configuration.AlertManagerURL)
-	if err != nil {
-		msg := fmt.Sprintf("failed to expire the silence: %v", err)
+	if config, ok := p.configuration.AlertConfigs[parameters[0]]; ok {
+		err := alertmanager.ExpireSilence(parameters[1], config.AlertManagerURL)
+		if err != nil {
+			msg := fmt.Sprintf("failed to expire the silence: %v", err)
+			return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
+		}
+	} else {
+		msg := fmt.Sprintf("Missing such ALERT_MANAGER_PLUGIN_ID (%s)", parameters[0])
 		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
 	}
 
-	silenceDeleted := fmt.Sprintf("Silence %s expired.", parameters[0])
+	silenceDeleted := fmt.Sprintf("Silence %s expired.", parameters[1])
 	return getCommandResponse(model.CommandResponseTypeInChannel, silenceDeleted), nil
 }
