@@ -1,8 +1,9 @@
 name: release
 
 on:
-  create:
+  push:
     tags:
+      - 'v*'
 
 jobs:
   goreleaser:
