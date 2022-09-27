@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 )
 
@@ -14,7 +13,7 @@ func writeString(file *os.File, str string) { // nolint: interfacer
 }
 
 func copyToByteSlice(name string, inputPath string, outputPath string) {
-	data, err := ioutil.ReadFile(inputPath)
+	data, err := os.ReadFile(inputPath)
 	if err != nil {
 		panic(err)
 	}
