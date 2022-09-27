@@ -1,3 +1,4 @@
 dist
 goreleaser/*
 node_modules
+.vscode/*

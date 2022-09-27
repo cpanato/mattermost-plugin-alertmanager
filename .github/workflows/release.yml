@@ -13,24 +13,22 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3
         with:
           fetch-depth: 0
 
-      - name: Set up Go
-        uses: actions/setup-go@v3
+      - name: Install Go
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f # v3
         with:
-          go-version: 1.17.x
+          go-version: 1.19
+          check-latest: true
 
-      - name: install head cosign
-        run: go install github.com/sigstore/cosign/cmd/cosign@main
-
-      - name: check cosign
-        run: cosign version
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@ced07f21fb1da67979f539bbc6304c16c0677e76 # v2
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@ff11ca24a9b39f2d36796d1fbd7a4e39c182630a # v3
         with:
           distribution: goreleaser
           version: latest

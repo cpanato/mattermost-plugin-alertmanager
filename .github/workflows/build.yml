@@ -8,16 +8,18 @@ on:
 
 jobs:
   test:
-    strategy:
-      matrix:
-        go-version: [1.17.x]
     runs-on: ubuntu-latest
+
     steps:
-    - name: Install Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: ${{ matrix.go-version }}
-    - name: Checkout code
-      uses: actions/checkout@v3
-    - name: Test
-      run: make dist
+      - name: Checkout code
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3
+
+      - name: Install Go
+        uses: actions/setup-go@268d8c0ca0432bb2cf416faae41297df9d262d7f # v3
+        with:
+          go-version: 1.19
+          check-latest: true
+          cache: true
+
+      - name: Dist
+        run: make dist
