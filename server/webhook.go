@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strings"
 	"time"
 
@@ -36,8 +37,13 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request, alertConf
 
 		/* first field: Annotations, Start/End, Source */
 		var msg string
-		for k, v := range alert.Annotations {
-			msg = fmt.Sprintf("%s**%s:** %s\n", msg, cases.Title(language.Und, cases.NoLower).String(k), v)
+		annotations := make([]string, 0, len(alert.Annotations))
+		for k := range alert.Annotations {
+			annotations = append(annotations, k)
+		}
+		sort.Strings(annotations)
+		for _, k := range annotations {
+			msg = fmt.Sprintf("%s**%s:** %s\n", msg, cases.Title(language.Und, cases.NoLower).String(k), alert.Annotations[k])
 		}
 		msg = fmt.Sprintf("%s \n", msg)
 		msg = fmt.Sprintf("%s**Started at:** %s (%s ago)\n", msg,
@@ -57,8 +63,13 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request, alertConf
 		/* second field: Labels only */
 		msg = ""
 		alert.Labels["AlertManagerPluginId"] = alertConfig.ID
-		for k, v := range alert.Labels {
-			msg = fmt.Sprintf("%s**%s:** %s\n", msg, cases.Title(language.Und, cases.NoLower).String(k), v)
+		labels := make([]string, 0, len(alert.Labels))
+		for k := range alert.Labels {
+			labels = append(labels, k)
+		}
+		sort.Strings(labels)
+		for _, k := range labels {
+			msg = fmt.Sprintf("%s**%s:** %s\n", msg, cases.Title(language.Und, cases.NoLower).String(k), alert.Labels[k])
 		}
 		fields = append(fields, &model.SlackAttachmentField{
 			Value: msg,
