@@ -89,7 +89,7 @@ func getCommandResponse(responseType, text string) *model.CommandResponse {
 func (p *Plugin) handleAlert(_ *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
 	var alertsCount = 0
 	var errors []string
-	fmt.Printf("%+v\n", p.configuration)
+
 	for _, alertConfig := range p.configuration.AlertConfigs {
 		alerts, err := alertmanager.ListAlerts(alertConfig.AlertManagerURL)
 		if err != nil {
@@ -100,10 +100,6 @@ func (p *Plugin) handleAlert(_ *model.CommandArgs) (*model.CommandResponse, *mod
 			continue
 		}
 		alertsCount += len(alerts)
-
-		for _, alert := range alerts {
-			fmt.Println(alert.Alert)
-		}
 
 		attachments := make([]*model.SlackAttachment, 0)
 		for _, alert := range alerts {
