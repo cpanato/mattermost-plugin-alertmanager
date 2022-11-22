@@ -37,32 +37,6 @@ const CustomAttributesSettings = (props) => {
         return new Map(Object.entries(emptySetting));
     }
 
-    const renderSettings = () => {
-        if(settings.size === 0) {
-            return (
-                <div className='no-settings-alert'>{`No alert managers have been created`}</div>
-            );
-        }
-
-        return Array.from(settings, ([key, value], index) => {
-            return (
-                <AMAttribute
-                    key={key}
-                    id={key}
-                    orderNumber={index}
-                    onChange={handleChange}
-                    onDelete={triggerDeleteModal}
-                    attributes = {{
-                        team: value.team,
-                        channel: value.channel,
-                        token: value.token,
-                        alertmanagerurl: value.alertmanagerurl
-                    }}
-                />
-            );
-        });
-    }
-
     const handleChange = ( { id, attributes } ) => {
         let newSettings = settings;
         newSettings.set(id, attributes);
@@ -102,6 +76,32 @@ const CustomAttributesSettings = (props) => {
         setIsDeleteModalShown(true);
         setSettingIdToDelete(id);
     };
+
+    const renderSettings = () => {
+        if(settings.size === 0) {
+            return (
+                <div className='no-settings-alert'>{`No alert managers have been created`}</div>
+            );
+        }
+
+        return Array.from(settings, ([key, value], index) => {
+            return (
+                <AMAttribute
+                    key={key}
+                    id={key}
+                    orderNumber={index}
+                    onChange={handleChange}
+                    onDelete={triggerDeleteModal}
+                    attributes = {{
+                        team: value.team,
+                        channel: value.channel,
+                        token: value.token,
+                        alertmanagerurl: value.alertmanagerurl
+                    }}
+                />
+            );
+        });
+    }
 
     return (
         <div className='alert-setting__wrapper'>
