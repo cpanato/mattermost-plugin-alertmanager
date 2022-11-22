@@ -10,8 +10,6 @@ import (
 	"github.com/cpanato/mattermost-plugin-alertmanager/server/alertmanager"
 )
 
-const aliceBlue = "#F0F8FF"
-
 func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request, alertConfig alertConfig) {
 	p.API.LogInfo("Received expire silence action")
 
@@ -52,7 +50,7 @@ func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request, aler
 				if actionItem.Integration.Context["silence_id"] == action.Context.SilenceID {
 					updateAttachment := attachment
 					updateAttachment.Actions = nil
-					updateAttachment.Color = aliceBlue
+					updateAttachment.Color = colorExpired
 					var silenceMsg string
 					userName, errUser := p.API.GetUser(action.UserID)
 					if errUser != nil {

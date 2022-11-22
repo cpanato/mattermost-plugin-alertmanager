@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hako/durafmt"
+	"github.com/prometheus/alertmanager/types"
 
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
@@ -189,6 +190,10 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (*model.CommandResp
 	var errors []string
 	var silencesCount = 0
 	var pendingSilencesCount = 0
+
+	config := p.API.GetConfig()
+	siteURLPort := *config.ServiceSettings.ListenAddress
+
 	for _, alertConfig := range p.configuration.AlertConfigs {
 		silences, err := alertmanager.ListSilences(alertConfig.AlertManagerURL)
 		if err != nil {
@@ -202,69 +207,10 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (*model.CommandResp
 
 		attachments := make([]*model.SlackAttachment, 0)
 		for _, silence := range silences {
-			if string(silence.Status.State) == "expired" {
-				continue
+			attachment := ConvertSilenceToSlackAttachment(silence, alertConfig, args.UserId, siteURLPort)
+			if attachment != nil {
+				attachments = append(attachments, attachment)
 			}
-			var fields []*model.SlackAttachmentField
-			var emoji, matchers, duration string
-			for _, m := range silence.Matchers {
-				if m.Name == "alertname" {
-					fields = addFields(fields, "Alert Name", m.Value, false)
-				} else {
-					matchers += fmt.Sprintf(`%s="%s"`, m.Name, m.Value)
-				}
-			}
-			fields = addFields(fields, "State", string(silence.Status.State), false)
-			fields = addFields(fields, "Matchers", matchers, false)
-			resolved := alertmanager.Resolved(silence)
-			if !resolved {
-				emoji = "🔕"
-				duration = fmt.Sprintf(
-					"**Started**: %s ago\n**Ends:** %s\n",
-					durafmt.Parse(time.Since(silence.StartsAt)),
-					durafmt.Parse(time.Since(silence.EndsAt)),
-				)
-				fields = addFields(fields, emoji, duration, false)
-			} else {
-				duration = fmt.Sprintf(
-					"**Ended**: %s ago\n**Duration**: %s",
-					durafmt.Parse(time.Since(silence.EndsAt)),
-					durafmt.Parse(silence.EndsAt.Sub(silence.StartsAt)),
-				)
-				fields = addFields(fields, "", duration, false)
-			}
-			fields = addFields(fields, "Comments", silence.Comment, false)
-			fields = addFields(fields, "Created by", silence.CreatedBy, false)
-			fields = addFields(fields, "AlertManagerPluginId", alertConfig.ID, false)
-
-			color := "#808080" // gray
-			if string(silence.Status.State) == "active" {
-				color = "#008000" // green
-			}
-
-			config := p.API.GetConfig()
-			siteURLPort := *config.ServiceSettings.ListenAddress
-			expireSilenceAction := &model.PostAction{
-				Name: "Expire Silence",
-				Type: model.PostActionTypeButton,
-				Integration: &model.PostActionIntegration{
-					Context: map[string]interface{}{
-						"action":     "expire",
-						"silence_id": silence.ID,
-						"user_id":    args.UserId,
-					},
-					URL: fmt.Sprintf("http://localhost%v/plugins/%v/api/expire?token=%s", siteURLPort, manifest.ID, alertConfig.Token),
-				},
-			}
-			attachment := &model.SlackAttachment{
-				Title:  silence.ID,
-				Fields: fields,
-				Color:  color,
-				Actions: []*model.PostAction{
-					expireSilenceAction,
-				},
-			}
-			attachments = append(attachments, attachment)
 		}
 
 		if len(attachments) == 0 {
@@ -324,4 +270,69 @@ func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (*model.CommandRes
 
 	silenceDeleted := fmt.Sprintf("Silence %s expired.", parameters[1])
 	return getCommandResponse(model.CommandResponseTypeInChannel, silenceDeleted), nil
+}
+
+func ConvertSilenceToSlackAttachment(silence types.Silence, config alertConfig, userID, siteURLPort string) *model.SlackAttachment {
+	if string(silence.Status.State) == "expired" {
+		return nil
+	}
+	var fields []*model.SlackAttachmentField
+	var emoji, matchers, duration string
+	for _, m := range silence.Matchers {
+		if m.Name == "alertname" {
+			fields = addFields(fields, "Alert Name", m.Value, false)
+		} else {
+			matchers += fmt.Sprintf(`%s="%s"`, m.Name, m.Value)
+		}
+	}
+	fields = addFields(fields, "State", string(silence.Status.State), false)
+	fields = addFields(fields, "Matchers", matchers, false)
+	resolved := alertmanager.Resolved(silence)
+	if !resolved {
+		emoji = "🔕"
+		duration = fmt.Sprintf(
+			"**Started**: %s ago\n**Ends:** %s\n",
+			durafmt.Parse(time.Since(silence.StartsAt)),
+			durafmt.Parse(time.Since(silence.EndsAt)),
+		)
+		fields = addFields(fields, emoji, duration, false)
+	} else {
+		duration = fmt.Sprintf(
+			"**Ended**: %s ago\n**Duration**: %s",
+			durafmt.Parse(time.Since(silence.EndsAt)),
+			durafmt.Parse(silence.EndsAt.Sub(silence.StartsAt)),
+		)
+		fields = addFields(fields, "", duration, false)
+	}
+	fields = addFields(fields, "Comments", silence.Comment, false)
+	fields = addFields(fields, "Created by", silence.CreatedBy, false)
+	fields = addFields(fields, "AlertManagerPluginId", config.ID, false)
+
+	color := colorResolved
+	if string(silence.Status.State) == "active" {
+		color = colorFiring
+	}
+
+	expireSilenceAction := &model.PostAction{
+		Name: "Expire Silence",
+		Type: model.PostActionTypeButton,
+		Integration: &model.PostActionIntegration{
+			Context: map[string]interface{}{
+				"action":     "expire",
+				"silence_id": silence.ID,
+				"user_id":    userID,
+			},
+			URL: fmt.Sprintf("http://localhost%v/plugins/%v/api/expire?token=%s", siteURLPort, manifest.ID, config.Token),
+		},
+	}
+	attachment := &model.SlackAttachment{
+		Title:  silence.ID,
+		Fields: fields,
+		Color:  color,
+		Actions: []*model.PostAction{
+			expireSilenceAction,
+		},
+	}
+
+	return attachment
 }
