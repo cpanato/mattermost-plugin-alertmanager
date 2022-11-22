@@ -77,6 +77,8 @@ const AMAttribute = (props) => {
     const regenerateToken = (e) => {
         e.preventDefault();
 
+        // Generate a 32 byte tokes. It must not include '*' and '/'.
+        // Copied from https://github.com/mattermost/mattermost-webapp/blob/33661c60bd05d708bcf85a49dad4d9fb3a39a75b/components/admin_console/generated_setting.tsx#L41
         const token = crypto.randomBytes(256).toString('base64').substring(0, 32).replaceAll('+', '-').replaceAll('/', '_');
 
         let newSettings = {...settings};
