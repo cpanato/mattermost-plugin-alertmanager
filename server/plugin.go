@@ -26,9 +26,9 @@ type Plugin struct {
 	// setConfiguration for usage.
 	configuration *configuration
 
-	// key - channel name from config, value - existing or created channel id received from api
-	ChannelIds map[string]string
-	BotUserID  string
+	// key - alert config id, value - existing or created channel id received from api
+	AlertConfigIDChannelID map[string]string
+	BotUserID              string
 
 	// configurationLock synchronizes access to the configuration.
 	configurationLock sync.RWMutex
@@ -51,14 +51,14 @@ func (p *Plugin) OnActivate() error {
 	p.BotUserID = botID
 
 	configuration := p.getConfiguration()
-	p.ChannelIds = make(map[string]string)
+	p.AlertConfigIDChannelID = make(map[string]string)
 	for k, alertConfig := range configuration.AlertConfigs {
 		var channelID string
 		channelID, err = p.ensureAlertChannelExists(alertConfig)
 		if err != nil {
 			p.API.LogWarn(fmt.Sprintf("Failed to ensure alert channel %v", k), "error", err.Error())
 		} else {
-			p.ChannelIds[alertConfig.Channel] = channelID
+			p.AlertConfigIDChannelID[alertConfig.ID] = channelID
 		}
 	}
 
