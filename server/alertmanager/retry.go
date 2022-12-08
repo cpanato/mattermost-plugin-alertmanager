@@ -2,11 +2,11 @@ package alertmanager
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/pkg/errors"
 )
 
 func httpBackoff() *backoff.ExponentialBackOff {
@@ -39,11 +39,11 @@ func httpRetry(method string, url string) (*http.Response, error) {
 		switch method {
 		case http.MethodGet:
 			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("status code is %d not 200", resp.StatusCode)
+				return errors.Errorf("status code is %d not 200", resp.StatusCode)
 			}
 		case http.MethodPost:
 			if resp.StatusCode == http.StatusBadRequest {
-				return fmt.Errorf("status code is %d not 3xx", resp.StatusCode)
+				return errors.Errorf("status code is %d not 3xx", resp.StatusCode)
 			}
 		}
 

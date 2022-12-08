@@ -18,6 +18,10 @@ import (
 //
 // If you add non-reference types to your configuration struct, be sure to rewrite Clone as a deep
 // copy appropriate for your types.
+type configuration struct {
+	AlertConfigs map[string]alertConfig
+}
+
 type alertConfig struct {
 	ID              string
 	Token           string
@@ -26,8 +30,24 @@ type alertConfig struct {
 	AlertManagerURL string
 }
 
-type configuration struct {
-	AlertConfigs map[string]alertConfig
+func (ac *alertConfig) IsValid() error {
+	if ac.Team == "" {
+		return errors.New("must set a Team")
+	}
+
+	if ac.Channel == "" {
+		return errors.New("must set a Channel")
+	}
+
+	if ac.Token == "" {
+		return errors.New("must set a Token")
+	}
+
+	if ac.AlertManagerURL == "" {
+		return errors.New("must set the AlertManager URL")
+	}
+
+	return nil
 }
 
 // Clone shallow copies the configuration. Your implementation may require a deep copy if

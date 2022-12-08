@@ -37,50 +37,58 @@ func (p *Plugin) OnDeactivate() error {
 }
 
 func (p *Plugin) OnActivate() error {
-	p.ChannelIds = make(map[string]string)
 	if err := p.ensureBotExists(); err != nil {
 		return errors.Wrap(err, "failed to ensure bot user exists")
 	}
 
 	configuration := p.getConfiguration()
-	for _, alertConfig := range configuration.AlertConfigs {
-		if err := p.IsValid(alertConfig); err != nil {
-			return err
-		}
-
-		team, err := p.API.GetTeamByName(alertConfig.Team)
+	p.ChannelIds = make(map[string]string)
+	for k, alertConfig := range configuration.AlertConfigs {
+		channelID, err := p.ensureAlertChannelExists(alertConfig)
 		if err != nil {
-			return err
-		}
-
-		channel, err := p.API.GetChannelByName(team.Id, alertConfig.Channel, false)
-		if err != nil {
-			if err.StatusCode == http.StatusNotFound {
-				channelToCreate := &model.Channel{
-					Name:        alertConfig.Channel,
-					DisplayName: alertConfig.Channel,
-					Type:        model.ChannelTypeOpen,
-					TeamId:      team.Id,
-					CreatorId:   p.BotUserID,
-				}
-
-				newChannel, errChannel := p.API.CreateChannel(channelToCreate)
-				if errChannel != nil {
-					return errChannel
-				}
-
-				p.ChannelIds[alertConfig.Channel] = newChannel.Id
-			} else {
-				return err
-			}
+			p.API.LogWarn(fmt.Sprintf("Failed to ensure alert channel %v", k), "error", err.Error())
 		} else {
-			p.ChannelIds[alertConfig.Channel] = channel.Id
+			p.ChannelIds[alertConfig.Channel] = channelID
 		}
 	}
 
 	_ = p.API.RegisterCommand(getCommand())
 
 	return nil
+}
+
+func (p *Plugin) ensureAlertChannelExists(alertConfig alertConfig) (string, error) {
+	if err := alertConfig.IsValid(); err != nil {
+		return "", errors.Wrap(err, "Alert Configuration is invalid")
+	}
+
+	team, err := p.API.GetTeamByName(alertConfig.Team)
+	if err != nil {
+		return "", errors.Wrap(err, "Failed to get team")
+	}
+
+	channel, err := p.API.GetChannelByName(team.Id, alertConfig.Channel, false)
+	if err != nil {
+		if err.StatusCode == http.StatusNotFound {
+			channelToCreate := &model.Channel{
+				Name:        alertConfig.Channel,
+				DisplayName: alertConfig.Channel,
+				Type:        model.ChannelTypeOpen,
+				TeamId:      team.Id,
+				CreatorId:   p.BotUserID,
+			}
+
+			newChannel, errChannel := p.API.CreateChannel(channelToCreate)
+			if errChannel != nil {
+				return "", errors.Wrap(err, "Failed to create alert channel")
+			}
+
+			return newChannel.Id, nil
+		}
+		return "", errors.Wrap(err, "Failed to get existing alert channel")
+	}
+
+	return channel.Id, nil
 }
 
 func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Request) {
@@ -111,26 +119,6 @@ func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Req
 	}
 
 	http.Error(w, invalidOrMissingTokenErr, http.StatusBadRequest)
-}
-
-func (p *Plugin) IsValid(configuration alertConfig) error {
-	if configuration.Team == "" {
-		return fmt.Errorf("must set a Team")
-	}
-
-	if configuration.Channel == "" {
-		return fmt.Errorf("must set a Channel")
-	}
-
-	if configuration.Token == "" {
-		return fmt.Errorf("must set a Token")
-	}
-
-	if configuration.AlertManagerURL == "" {
-		return fmt.Errorf("must set the AlertManager URL")
-	}
-
-	return nil
 }
 
 func (p *Plugin) ensureBotExists() error {
