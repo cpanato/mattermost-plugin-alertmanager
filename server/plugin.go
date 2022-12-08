@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"net/http"
 	"sync"
@@ -96,7 +97,7 @@ func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Req
 		return
 	}
 	for _, alertConfig := range p.configuration.AlertConfigs {
-		if token == alertConfig.Token {
+		if subtle.ConstantTimeCompare([]byte(token), []byte(alertConfig.Token)) == 0 {
 			switch r.URL.Path {
 			case "/api/webhook":
 				p.handleWebhook(w, r, alertConfig)
