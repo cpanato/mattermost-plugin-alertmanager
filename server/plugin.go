@@ -124,7 +124,9 @@ func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Req
 		http.Error(w, invalidOrMissingTokenErr, http.StatusBadRequest)
 		return
 	}
-	for _, alertConfig := range p.configuration.AlertConfigs {
+
+	configuration := p.getConfiguration()
+	for _, alertConfig := range configuration.AlertConfigs {
 		if subtle.ConstantTimeCompare([]byte(token), []byte(alertConfig.Token)) == 0 {
 			switch r.URL.Path {
 			case "/api/webhook":

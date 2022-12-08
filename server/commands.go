@@ -135,10 +135,11 @@ func (p *Plugin) executeCommand(args *model.CommandArgs) string {
 }
 
 func (p *Plugin) handleAlert(args *model.CommandArgs) (string, error) {
+	configuration := p.getConfiguration()
 	var alertsCount = 0
 	var errors []string
 
-	for _, alertConfig := range p.configuration.AlertConfigs {
+	for _, alertConfig := range configuration.AlertConfigs {
 		alerts, err := alertmanager.ListAlerts(alertConfig.AlertManagerURL)
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("AlertManagerURL %q: failed to list alerts... %v", alertConfig.AlertManagerURL, err))
@@ -199,7 +200,7 @@ func (p *Plugin) handleStatus(args *model.CommandArgs) (string, error) {
 	configuration := p.getConfiguration()
 
 	var errors []string
-	for _, alertConfig := range p.configuration.AlertConfigs {
+	for _, alertConfig := range configuration.AlertConfigs {
 		status, err := alertmanager.Status(alertConfig.AlertManagerURL)
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("AlertManagerURL %q: failed to get status... %v", alertConfig.AlertManagerURL, err))
@@ -240,6 +241,7 @@ func (p *Plugin) handleStatus(args *model.CommandArgs) (string, error) {
 }
 
 func (p *Plugin) handleListSilences(args *model.CommandArgs) (string, error) {
+	configuration := p.getConfiguration()
 	var errors []string
 	var silencesCount = 0
 	var pendingSilencesCount = 0
@@ -247,7 +249,7 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (string, error) {
 	config := p.API.GetConfig()
 	siteURLPort := *config.ServiceSettings.ListenAddress
 
-	for _, alertConfig := range p.configuration.AlertConfigs {
+	for _, alertConfig := range configuration.AlertConfigs {
 		silences, err := alertmanager.ListSilences(alertConfig.AlertManagerURL)
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("AlertManagerURL %q: failed to get silences... %v", alertConfig.AlertManagerURL, err))
@@ -310,7 +312,9 @@ func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (string, error) {
 		return "Command requires 2 parameters: alert configuration number and silence ID", nil
 	}
 
-	if config, ok := p.configuration.AlertConfigs[parameters[0]]; ok {
+	configuration := p.getConfiguration()
+
+	if config, ok := configuration.AlertConfigs[parameters[0]]; ok {
 		err := alertmanager.ExpireSilence(parameters[1], config.AlertManagerURL)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to expire the silence")
