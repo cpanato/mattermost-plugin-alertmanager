@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/alertmanager/types"
 
+	"github.com/mattermost/mattermost-plugin-api/experimental/command"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
 
@@ -17,26 +18,59 @@ import (
 )
 
 const (
-	ActionHelp = "help"
+	actionHelp  = "help"
+	actionAbout = "about"
 
 	helpMsg = `run:
 	/alertmanager alerts - to list the existing alerts
 	/alertmanager silences - to list the existing silences
-	/alertmanager expire_silence <ALERT_MANAGER_PLUGIN_ID> <SILENCE_ID> - to expire the specified silence
+	/alertmanager expire_silence - to expire a silence
 	/alertmanager status - to list the version and uptime of the Alertmanager instance
-	/alertmanager help - to get this help
+	/alertmanager help - display Slash Command help text"
+	/alertmanager about - display build information
 	`
 )
 
-func getCommand() *model.Command {
-	return &model.Command{
-		Trigger:          "alertmanager",
-		DisplayName:      "Alert Manager",
-		Description:      "Alert Manager Bot",
-		AutoComplete:     true,
-		AutoCompleteDesc: "Available commands: status, alerts, silences, expire_silence, help",
-		AutoCompleteHint: "[command]",
+func (p *Plugin) getCommand() (*model.Command, error) {
+	iconData, err := command.GetIconData(p.API, "assets/alertmanager-logo.svg")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get icon data")
 	}
+
+	return &model.Command{
+		Trigger:              "alertmanager",
+		AutoComplete:         true,
+		AutoCompleteDesc:     fmt.Sprintf("Available commands: status, alerts, silences, expire_silence, %s, %s", actionHelp, actionAbout),
+		AutoCompleteHint:     "[command]",
+		AutocompleteData:     getAutocompleteData(),
+		AutocompleteIconData: iconData,
+	}, nil
+}
+
+func getAutocompleteData() *model.AutocompleteData {
+	root := model.NewAutocompleteData("alertmanager", "[command]", fmt.Sprintf("Available commands: status, alerts, silences, expire_silence, %s, %s", actionHelp, actionAbout))
+
+	alerts := model.NewAutocompleteData("alerts", "", "List the existing alerts")
+	root.AddCommand(alerts)
+
+	silences := model.NewAutocompleteData("silences", "", "List the existing silences")
+	root.AddCommand(silences)
+
+	expireSilence := model.NewAutocompleteData("expire_silence", "[configuration number] [silence ID]", "TODList the version and uptime of the Alertmanager instance")
+	expireSilence.AddTextArgument("The number of the alert configuration", "[configuration number]", "")
+	expireSilence.AddTextArgument("The ID of the silence to expire", "[silence ID]", "")
+	root.AddCommand(expireSilence)
+
+	status := model.NewAutocompleteData("status", "", "List the version and uptime of the Alertmanager instance")
+	root.AddCommand(status)
+
+	help := model.NewAutocompleteData(actionHelp, "", "Display Slash Command help text")
+	root.AddCommand(help)
+
+	info := command.BuildInfoAutocomplete(actionAbout)
+	root.AddCommand(info)
+
+	return root
 }
 
 func (p *Plugin) postCommandResponse(args *model.CommandArgs, text string) {
@@ -60,13 +94,13 @@ func (p *Plugin) ExecuteCommand(_ *plugin.Context, args *model.CommandArgs) (*mo
 
 func (p *Plugin) executeCommand(args *model.CommandArgs) string {
 	split := strings.Fields(args.Command)
-	command := split[0]
+	cmd := split[0]
 	action := ""
 	if len(split) > 1 {
 		action = strings.TrimSpace(split[1])
 	}
 
-	if command != "/alertmanager" {
+	if cmd != "/alertmanager" {
 		return ""
 	}
 
@@ -85,7 +119,9 @@ func (p *Plugin) executeCommand(args *model.CommandArgs) string {
 		msg, err = p.handleListSilences(args)
 	case "expire_silence":
 		msg, err = p.handleExpireSilence(args)
-	case ActionHelp:
+	case actionAbout:
+		msg, err = command.BuildInfo(Manifest)
+	case actionHelp:
 		msg = helpMsg
 	default:
 		msg = helpMsg
@@ -160,6 +196,8 @@ func (p *Plugin) handleAlert(args *model.CommandArgs) (string, error) {
 }
 
 func (p *Plugin) handleStatus(args *model.CommandArgs) (string, error) {
+	configuration := p.getConfiguration()
+
 	var errors []string
 	for _, alertConfig := range p.configuration.AlertConfigs {
 		status, err := alertmanager.Status(alertConfig.AlertManagerURL)
@@ -192,6 +230,10 @@ func (p *Plugin) handleStatus(args *model.CommandArgs) (string, error) {
 
 	if len(errors) > 0 {
 		return strings.Join(errors, "\n"), nil
+	}
+
+	if len(configuration.AlertConfigs) == 0 {
+		return "No alert managers are configured!", nil
 	}
 
 	return "", nil
@@ -265,7 +307,7 @@ func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (string, error) {
 	}
 
 	if len(parameters) != 2 {
-		return "Command requires 2 parameters: ALERT_MANAGER_PLUGIN_ID and SILENCE_ID", nil
+		return "Command requires 2 parameters: alert configuration number and silence ID", nil
 	}
 
 	if config, ok := p.configuration.AlertConfigs[parameters[0]]; ok {
@@ -274,7 +316,7 @@ func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (string, error) {
 			return "", errors.Wrap(err, "failed to expire the silence")
 		}
 	} else {
-		return fmt.Sprintf("Missing such ALERT_MANAGER_PLUGIN_ID (%s)", parameters[0]), nil
+		return fmt.Sprintf("Alert configuration %s not found", parameters[0]), nil
 	}
 
 	return fmt.Sprintf("Silence %s expired.", parameters[1]), nil

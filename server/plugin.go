@@ -12,6 +12,12 @@ import (
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
+
+	root "github.com/cpanato/mattermost-plugin-alertmanager"
+)
+
+var (
+	Manifest model.Manifest = root.Manifest
 )
 
 type Plugin struct {
@@ -58,7 +64,15 @@ func (p *Plugin) OnActivate() error {
 		}
 	}
 
-	_ = p.API.RegisterCommand(getCommand())
+	command, err := p.getCommand()
+	if err != nil {
+		return errors.Wrap(err, "failed to get command")
+	}
+
+	err = p.API.RegisterCommand(command)
+	if err != nil {
+		return errors.Wrap(err, "failed to register command")
+	}
 
 	return nil
 }
