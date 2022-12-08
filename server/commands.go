@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/hako/durafmt"
+	"github.com/pkg/errors"
 	"github.com/prometheus/alertmanager/types"
 
 	"github.com/mattermost/mattermost-server/v6/model"
@@ -38,7 +39,26 @@ func getCommand() *model.Command {
 	}
 }
 
+func (p *Plugin) postCommandResponse(args *model.CommandArgs, text string) {
+	post := &model.Post{
+		UserId:    p.BotUserID,
+		ChannelId: args.ChannelId,
+		RootId:    args.RootId,
+		Message:   text,
+	}
+	_ = p.API.SendEphemeralPost(args.UserId, post)
+}
+
 func (p *Plugin) ExecuteCommand(_ *plugin.Context, args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+	msg := p.executeCommand(args)
+	if msg != "" {
+		p.postCommandResponse(args, msg)
+	}
+
+	return &model.CommandResponse{}, nil
+}
+
+func (p *Plugin) executeCommand(args *model.CommandArgs) string {
 	split := strings.Fields(args.Command)
 	command := split[0]
 	action := ""
@@ -47,47 +67,38 @@ func (p *Plugin) ExecuteCommand(_ *plugin.Context, args *model.CommandArgs) (*mo
 	}
 
 	if command != "/alertmanager" {
-		return &model.CommandResponse{}, nil
+		return ""
 	}
 
 	if action == "" {
-		return getCommandResponse(model.CommandResponseTypeEphemeral, "Missing command, please run `/alertmanager help` to check all commands available."), nil
+		return "Missing command, please run `/alertmanager help` to check all commands available."
 	}
 
-	if action == ActionHelp {
-		return getCommandResponse(model.CommandResponseTypeEphemeral, helpMsg), nil
-	}
-
+	var msg string
+	var err error
 	switch action {
 	case "alerts":
-		resp, err := p.handleAlert(args)
-		return resp, err
+		msg, err = p.handleAlert(args)
 	case "status":
-		resp, err := p.handleStatus(args)
-		return resp, err
+		msg, err = p.handleStatus(args)
 	case "silences":
-		resp, err := p.handleListSilences(args)
-		return resp, err
+		msg, err = p.handleListSilences(args)
 	case "expire_silence":
-		resp, err := p.handleExpireSilence(args)
-		return resp, err
+		msg, err = p.handleExpireSilence(args)
 	case ActionHelp:
+		msg = helpMsg
 	default:
-		return getCommandResponse(model.CommandResponseTypeEphemeral, helpMsg), nil
+		msg = helpMsg
 	}
 
-	return &model.CommandResponse{}, nil
-}
-
-func getCommandResponse(responseType, text string) *model.CommandResponse {
-	return &model.CommandResponse{
-		ResponseType: responseType,
-		Text:         text,
-		Type:         model.PostTypeDefault,
+	if err != nil {
+		return err.Error()
 	}
+
+	return msg
 }
 
-func (p *Plugin) handleAlert(_ *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+func (p *Plugin) handleAlert(args *model.CommandArgs) (string, error) {
 	var alertsCount = 0
 	var errors []string
 
@@ -127,6 +138,7 @@ func (p *Plugin) handleAlert(_ *model.CommandArgs) (*model.CommandResponse, *mod
 		post := &model.Post{
 			ChannelId: p.ChannelIds[alertConfig.Channel],
 			UserId:    p.BotUserID,
+			RootId:    args.RootId,
 		}
 
 		model.ParseSlackAttachment(post, attachments)
@@ -137,18 +149,17 @@ func (p *Plugin) handleAlert(_ *model.CommandArgs) (*model.CommandResponse, *mod
 	}
 
 	if len(errors) > 0 {
-		msg := strings.Join(errors, "\n")
-		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
+		return strings.Join(errors, "\n"), nil
 	}
 
 	if alertsCount == 0 {
-		return getCommandResponse(model.CommandResponseTypeInChannel, "No alerts right now! :tada:"), nil
+		return "No alerts right now! :tada:", nil
 	}
 
-	return &model.CommandResponse{}, nil
+	return "", nil
 }
 
-func (p *Plugin) handleStatus(_ *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+func (p *Plugin) handleStatus(args *model.CommandArgs) (string, error) {
 	var errors []string
 	for _, alertConfig := range p.configuration.AlertConfigs {
 		status, err := alertmanager.Status(alertConfig.AlertManagerURL)
@@ -169,6 +180,7 @@ func (p *Plugin) handleStatus(_ *model.CommandArgs) (*model.CommandResponse, *mo
 		post := &model.Post{
 			ChannelId: p.ChannelIds[alertConfig.Channel],
 			UserId:    p.BotUserID,
+			RootId:    args.RootId,
 		}
 
 		model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
@@ -179,14 +191,13 @@ func (p *Plugin) handleStatus(_ *model.CommandArgs) (*model.CommandResponse, *mo
 	}
 
 	if len(errors) > 0 {
-		msg := strings.Join(errors, "\n")
-		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
+		return strings.Join(errors, "\n"), nil
 	}
 
-	return &model.CommandResponse{}, nil
+	return "", nil
 }
 
-func (p *Plugin) handleListSilences(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+func (p *Plugin) handleListSilences(args *model.CommandArgs) (string, error) {
 	var errors []string
 	var silencesCount = 0
 	var pendingSilencesCount = 0
@@ -221,6 +232,7 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (*model.CommandResp
 		post := &model.Post{
 			ChannelId: p.ChannelIds[alertConfig.Channel],
 			UserId:    p.BotUserID,
+			RootId:    args.RootId,
 		}
 
 		model.ParseSlackAttachment(post, attachments)
@@ -231,22 +243,21 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (*model.CommandResp
 	}
 
 	if silencesCount == 0 {
-		return getCommandResponse(model.CommandResponseTypeInChannel, "No silences right now."), nil
+		return "No silences right now.", nil
 	}
 
 	if pendingSilencesCount == 0 {
-		return getCommandResponse(model.CommandResponseTypeInChannel, "No active or pending silences right now."), nil
+		return "No active or pending silences right now.", nil
 	}
 
 	if len(errors) > 0 {
-		msg := strings.Join(errors, "\n")
-		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
+		return strings.Join(errors, "\n"), nil
 	}
 
-	return &model.CommandResponse{}, nil
+	return "", nil
 }
 
-func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (*model.CommandResponse, *model.AppError) {
+func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (string, error) {
 	split := strings.Fields(args.Command)
 	var parameters []string
 	if len(split) > 2 {
@@ -254,22 +265,19 @@ func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (*model.CommandRes
 	}
 
 	if len(parameters) != 2 {
-		return getCommandResponse(model.CommandResponseTypeEphemeral, "Command requires 2 parameters: ALERT_MANAGER_PLUGIN_ID and SILENCE_ID"), nil
+		return "Command requires 2 parameters: ALERT_MANAGER_PLUGIN_ID and SILENCE_ID", nil
 	}
 
 	if config, ok := p.configuration.AlertConfigs[parameters[0]]; ok {
 		err := alertmanager.ExpireSilence(parameters[1], config.AlertManagerURL)
 		if err != nil {
-			msg := fmt.Sprintf("failed to expire the silence: %v", err)
-			return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
+			return "", errors.Wrap(err, "failed to expire the silence")
 		}
 	} else {
-		msg := fmt.Sprintf("Missing such ALERT_MANAGER_PLUGIN_ID (%s)", parameters[0])
-		return getCommandResponse(model.CommandResponseTypeInChannel, msg), nil
+		return fmt.Sprintf("Missing such ALERT_MANAGER_PLUGIN_ID (%s)", parameters[0]), nil
 	}
 
-	silenceDeleted := fmt.Sprintf("Silence %s expired.", parameters[1])
-	return getCommandResponse(model.CommandResponseTypeInChannel, silenceDeleted), nil
+	return fmt.Sprintf("Silence %s expired.", parameters[1]), nil
 }
 
 func ConvertSilenceToSlackAttachment(silence types.Silence, config alertConfig, userID, siteURLPort string) *model.SlackAttachment {
