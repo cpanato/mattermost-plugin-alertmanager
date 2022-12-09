@@ -20,6 +20,7 @@ default: all
 
 # Verify environment, and define PLUGIN_ID, PLUGIN_VERSION, HAS_SERVER and HAS_WEBAPP as needed.
 include build/setup.mk
+include build/legacy.mk
 
 BUNDLE_NAME ?= $(PLUGIN_ID)-$(PLUGIN_VERSION).tar.gz
 

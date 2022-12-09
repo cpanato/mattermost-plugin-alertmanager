@@ -2,6 +2,7 @@ package alertmanager
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -51,7 +52,7 @@ func ExpireSilence(silenceID, alertmanagerURL string) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		return fmt.Errorf(string(body))
+		return errors.New(string(body))
 	}
 
 	return nil

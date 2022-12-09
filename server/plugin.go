@@ -1,22 +1,26 @@
 package main
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"sync"
 
-	"github.com/pkg/errors"
-
+	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
+
+	root "github.com/cpanato/mattermost-plugin-alertmanager"
 )
 
-const (
-	BotUserKey = "AlertManagerBot"
+var (
+	Manifest model.Manifest = root.Manifest
 )
 
 type Plugin struct {
 	plugin.MattermostPlugin
+	client *pluginapi.Client
 
 	// configuration is the active plugin configuration. Consult getConfiguration and
 	// setConfiguration for usage.
@@ -31,55 +35,78 @@ type Plugin struct {
 }
 
 func (p *Plugin) OnDeactivate() error {
-	command := getCommand()
-	return p.API.UnregisterCommand("", command.Trigger)
+	return nil
 }
 
 func (p *Plugin) OnActivate() error {
-	p.ChannelIds = make(map[string]string)
-	if err := p.ensureBotExists(); err != nil {
-		return errors.Wrap(err, "failed to ensure bot user exists")
+	p.client = pluginapi.NewClient(p.API, p.Driver)
+	botID, err := p.client.Bot.EnsureBot(&model.Bot{
+		Username:    "alertmanagerbot",
+		DisplayName: "AlertManager Bot",
+		Description: "Created by the AlertManager plugin.",
+	}, pluginapi.ProfileImagePath(filepath.Join("assets", "alertmanager-logo.png")))
+	if err != nil {
+		return fmt.Errorf("failed to ensure bot account: %w", err)
 	}
+	p.BotUserID = botID
 
 	configuration := p.getConfiguration()
-	for _, alertConfig := range configuration.AlertConfigs {
-		if err := p.IsValid(alertConfig); err != nil {
-			return err
-		}
-
-		team, err := p.API.GetTeamByName(alertConfig.Team)
+	p.ChannelIds = make(map[string]string)
+	for k, alertConfig := range configuration.AlertConfigs {
+		var channelID string
+		channelID, err = p.ensureAlertChannelExists(alertConfig)
 		if err != nil {
-			return err
-		}
-
-		channel, err := p.API.GetChannelByName(team.Id, alertConfig.Channel, false)
-		if err != nil {
-			if err.StatusCode == http.StatusNotFound {
-				channelToCreate := &model.Channel{
-					Name:        alertConfig.Channel,
-					DisplayName: alertConfig.Channel,
-					Type:        model.ChannelTypeOpen,
-					TeamId:      team.Id,
-					CreatorId:   p.BotUserID,
-				}
-
-				newChannel, errChannel := p.API.CreateChannel(channelToCreate)
-				if errChannel != nil {
-					return errChannel
-				}
-
-				p.ChannelIds[alertConfig.Channel] = newChannel.Id
-			} else {
-				return err
-			}
+			p.API.LogWarn(fmt.Sprintf("Failed to ensure alert channel %v", k), "error", err.Error())
 		} else {
-			p.ChannelIds[alertConfig.Channel] = channel.Id
+			p.ChannelIds[alertConfig.Channel] = channelID
 		}
 	}
 
-	_ = p.API.RegisterCommand(getCommand())
+	command, err := p.getCommand()
+	if err != nil {
+		return fmt.Errorf("failed to get command: %w", err)
+	}
+
+	err = p.API.RegisterCommand(command)
+	if err != nil {
+		return fmt.Errorf("failed to register command: %w", err)
+	}
 
 	return nil
+}
+
+func (p *Plugin) ensureAlertChannelExists(alertConfig alertConfig) (string, error) {
+	if err := alertConfig.IsValid(); err != nil {
+		return "", fmt.Errorf("alert Configuration is invalid: %w", err)
+	}
+
+	team, appErr := p.API.GetTeamByName(alertConfig.Team)
+	if appErr != nil {
+		return "", fmt.Errorf("failed to get team: %w", appErr)
+	}
+
+	channel, appErr := p.API.GetChannelByName(team.Id, alertConfig.Channel, false)
+	if appErr != nil {
+		if appErr.StatusCode == http.StatusNotFound {
+			channelToCreate := &model.Channel{
+				Name:        alertConfig.Channel,
+				DisplayName: alertConfig.Channel,
+				Type:        model.ChannelTypeOpen,
+				TeamId:      team.Id,
+				CreatorId:   p.BotUserID,
+			}
+
+			newChannel, errChannel := p.API.CreateChannel(channelToCreate)
+			if errChannel != nil {
+				return "", fmt.Errorf("failed to create alert channel: %w", errChannel)
+			}
+
+			return newChannel.Id, nil
+		}
+		return "", fmt.Errorf("failed to get existing alert channel: %w", appErr)
+	}
+
+	return channel.Id, nil
 }
 
 func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Request) {
@@ -95,8 +122,10 @@ func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Req
 		http.Error(w, invalidOrMissingTokenErr, http.StatusBadRequest)
 		return
 	}
-	for _, alertConfig := range p.configuration.AlertConfigs {
-		if token == alertConfig.Token {
+
+	configuration := p.getConfiguration()
+	for _, alertConfig := range configuration.AlertConfigs {
+		if subtle.ConstantTimeCompare([]byte(token), []byte(alertConfig.Token)) == 0 {
 			switch r.URL.Path {
 			case "/api/webhook":
 				p.handleWebhook(w, r, alertConfig)
@@ -110,65 +139,4 @@ func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Req
 	}
 
 	http.Error(w, invalidOrMissingTokenErr, http.StatusBadRequest)
-}
-
-func (p *Plugin) IsValid(configuration alertConfig) error {
-	if configuration.Team == "" {
-		return fmt.Errorf("must set a Team")
-	}
-
-	if configuration.Channel == "" {
-		return fmt.Errorf("must set a Channel")
-	}
-
-	if configuration.Token == "" {
-		return fmt.Errorf("must set a Token")
-	}
-
-	if configuration.AlertManagerURL == "" {
-		return fmt.Errorf("must set the AlertManager URL")
-	}
-
-	return nil
-}
-
-func (p *Plugin) ensureBotExists() error {
-	// Attempt to find an existing bot
-	botUserIDBytes, err := p.API.KVGet(BotUserKey)
-	if err != nil {
-		return err
-	}
-
-	if botUserIDBytes == nil {
-		// Create a bot since one doesn't exist
-		p.API.LogDebug("Creating bot for AlertManager plugin")
-
-		bot, err := p.API.CreateBot(&model.Bot{
-			Username:    "alertmanagerbot",
-			DisplayName: "AlertManager Bot",
-			Description: "Created by the AlertManager plugin.",
-		})
-		if err != nil {
-			return err
-		}
-
-		// Give it a profile picture
-		err = p.API.SetProfileImage(bot.UserId, profileImage)
-		if err != nil {
-			p.API.LogError("Failed to set profile image for bot", "err", err)
-		}
-
-		p.API.LogDebug("Bot created for AlertManager plugin")
-
-		// Save the bot ID
-		err = p.API.KVSet(BotUserKey, []byte(bot.UserId))
-		if err != nil {
-			return err
-		}
-		p.BotUserID = bot.UserId
-	} else {
-		p.BotUserID = string(botUserIDBytes)
-	}
-
-	return nil
 }
