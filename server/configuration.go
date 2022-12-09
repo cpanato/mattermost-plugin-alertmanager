@@ -1,10 +1,10 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"reflect"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 // configuration captures the plugin's external configuration as exposed in the Mattermost server
@@ -111,7 +111,7 @@ func (p *Plugin) OnConfigurationChange() error {
 
 	// Load the public configuration fields from the Mattermost server configuration.
 	if err := p.API.LoadPluginConfiguration(&configurationInstance); err != nil {
-		return errors.Wrap(err, "failed to load plugin configuration")
+		return fmt.Errorf("failed to load plugin configuration: %w", err)
 	}
 
 	for id, alertConfigInstance := range configurationInstance.AlertConfigs {

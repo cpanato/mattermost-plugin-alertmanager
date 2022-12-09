@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/hako/durafmt"
-	"github.com/pkg/errors"
 	"github.com/prometheus/alertmanager/types"
 
 	"github.com/mattermost/mattermost-plugin-api/experimental/command"
@@ -34,7 +33,7 @@ const (
 func (p *Plugin) getCommand() (*model.Command, error) {
 	iconData, err := command.GetIconData(p.API, "assets/alertmanager-logo.svg")
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get icon data")
+		return nil, fmt.Errorf("failed to get icon data %w", err)
 	}
 
 	return &model.Command{
@@ -317,7 +316,7 @@ func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (string, error) {
 	if config, ok := configuration.AlertConfigs[parameters[0]]; ok {
 		err := alertmanager.ExpireSilence(parameters[1], config.AlertManagerURL)
 		if err != nil {
-			return "", errors.Wrap(err, "failed to expire the silence")
+			return "", fmt.Errorf("failed to expire the silence: %w", err)
 		}
 	} else {
 		return fmt.Sprintf("Alert configuration %s not found", parameters[0]), nil

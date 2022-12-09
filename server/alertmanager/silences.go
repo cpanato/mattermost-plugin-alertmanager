@@ -2,13 +2,13 @@ package alertmanager
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"sort"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/prometheus/alertmanager/types"
 )
 
@@ -37,7 +37,7 @@ func ListSilences(alertmanagerURL string) ([]types.Silence, error) {
 // DeleteSilence delete a silence by ID.
 func ExpireSilence(silenceID, alertmanagerURL string) error {
 	if silenceID == "" {
-		return errors.Errorf("silence ID cannot be empty")
+		return fmt.Errorf("silence ID cannot be empty")
 	}
 
 	expireSilence := fmt.Sprintf("%s/api/v2/silence/%s", alertmanagerURL, silenceID)
@@ -52,7 +52,7 @@ func ExpireSilence(silenceID, alertmanagerURL string) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		return errors.Errorf(string(body))
+		return errors.New(string(body))
 	}
 
 	return nil

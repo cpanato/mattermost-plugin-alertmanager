@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/pkg/errors"
-
 	pluginapi "github.com/mattermost/mattermost-plugin-api"
 	"github.com/mattermost/mattermost-server/v6/model"
 	"github.com/mattermost/mattermost-server/v6/plugin"
@@ -48,7 +46,7 @@ func (p *Plugin) OnActivate() error {
 		Description: "Created by the AlertManager plugin.",
 	}, pluginapi.ProfileImagePath(filepath.Join("assets", "alertmanager-logo.png")))
 	if err != nil {
-		return errors.Wrap(err, "failed to ensure bot account")
+		return fmt.Errorf("failed to ensure bot account: %w", err)
 	}
 	p.BotUserID = botID
 
@@ -66,12 +64,12 @@ func (p *Plugin) OnActivate() error {
 
 	command, err := p.getCommand()
 	if err != nil {
-		return errors.Wrap(err, "failed to get command")
+		return fmt.Errorf("failed to get command: %w", err)
 	}
 
 	err = p.API.RegisterCommand(command)
 	if err != nil {
-		return errors.Wrap(err, "failed to register command")
+		return fmt.Errorf("failed to register command: %w", err)
 	}
 
 	return nil
@@ -79,12 +77,12 @@ func (p *Plugin) OnActivate() error {
 
 func (p *Plugin) ensureAlertChannelExists(alertConfig alertConfig) (string, error) {
 	if err := alertConfig.IsValid(); err != nil {
-		return "", errors.Wrap(err, "Alert Configuration is invalid")
+		return "", fmt.Errorf("alert Configuration is invalid: %w", err)
 	}
 
 	team, appErr := p.API.GetTeamByName(alertConfig.Team)
 	if appErr != nil {
-		return "", errors.Wrap(appErr, "Failed to get team")
+		return "", fmt.Errorf("failed to get team: %w", appErr)
 	}
 
 	channel, appErr := p.API.GetChannelByName(team.Id, alertConfig.Channel, false)
@@ -100,12 +98,12 @@ func (p *Plugin) ensureAlertChannelExists(alertConfig alertConfig) (string, erro
 
 			newChannel, errChannel := p.API.CreateChannel(channelToCreate)
 			if errChannel != nil {
-				return "", errors.Wrap(appErr, "Failed to create alert channel")
+				return "", fmt.Errorf("failed to create alert channel: %w", errChannel)
 			}
 
 			return newChannel.Id, nil
 		}
-		return "", errors.Wrap(appErr, "Failed to get existing alert channel")
+		return "", fmt.Errorf("failed to get existing alert channel: %w", appErr)
 	}
 
 	return channel.Id, nil
