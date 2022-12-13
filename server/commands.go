@@ -172,7 +172,7 @@ func (p *Plugin) handleAlert(args *model.CommandArgs) (string, error) {
 		}
 
 		post := &model.Post{
-			ChannelId: p.ChannelIds[alertConfig.Channel],
+			ChannelId: p.AlertConfigIDChannelID[alertConfig.ID],
 			UserId:    p.BotUserID,
 			RootId:    args.RootId,
 		}
@@ -216,7 +216,7 @@ func (p *Plugin) handleStatus(args *model.CommandArgs) (string, error) {
 		}
 
 		post := &model.Post{
-			ChannelId: p.ChannelIds[alertConfig.Channel],
+			ChannelId: p.AlertConfigIDChannelID[alertConfig.ID],
 			UserId:    p.BotUserID,
 			RootId:    args.RootId,
 		}
@@ -273,7 +273,7 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (string, error) {
 		pendingSilencesCount += len(attachments)
 
 		post := &model.Post{
-			ChannelId: p.ChannelIds[alertConfig.Channel],
+			ChannelId: p.AlertConfigIDChannelID[alertConfig.ID],
 			UserId:    p.BotUserID,
 			RootId:    args.RootId,
 		}

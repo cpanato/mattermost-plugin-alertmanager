@@ -40,7 +40,7 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request, alertConf
 	}
 
 	post := &model.Post{
-		ChannelId: p.ChannelIds[alertConfig.Channel],
+		ChannelId: p.AlertConfigIDChannelID[alertConfig.ID],
 		UserId:    p.BotUserID,
 	}
 
