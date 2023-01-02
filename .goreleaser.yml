@@ -9,15 +9,13 @@ before:
   hooks:
     - make clean
     - make dist
-    - sh -c "cosign sign-blob --timeout 360s --output-signature dist/alertmanager-{{ .Version }}.sig -output-certificate dist/alertmanager-{{ .Version }}.pem dist/alertmanager-{{ .Version }}.tar.gz"
+    - sh -c "cosign sign-blob --timeout 360s --output-signature dist/alertmanager-{{ .Version }}.sig --output-certificate dist/alertmanager-{{ .Version }}.pem dist/alertmanager-{{ .Version }}.tar.gz"
 
 checksum:
   extra_files:
     - glob: ./dist/alertmanager-{{ .Version }}.tar.gz
 
 release:
-  prerelease: allow
-  draft: true # allow for manual edits
   github:
     owner: cpanato
     name: mattermost-plugin-alertmanager
