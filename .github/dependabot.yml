@@ -9,6 +9,14 @@ updates:
     reviewers:
       - "cpanato"
 
+  - package-ecosystem: npm
+    directory: "/webapp"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    reviewers:
+      - "cpanato"
+
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
