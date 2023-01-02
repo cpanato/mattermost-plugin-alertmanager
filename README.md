@@ -36,6 +36,7 @@ Next, to configure the plugin, follow these steps:
 7. Hit **Save**.
 8. Next, copy the **Token** above the **Save** button, which is used to configure the plugin for your AlertManager account.
 9. Go to your Alermanager configuration, paste the following webhook URL and specfiy the name of the service and the token you copied in step 9.
+10. Invite the `@alertmanagerbot` user to your target team and channel.
 
 ```
 https://SITEURL/plugins/alertmanager/api/webhook?token=TOKEN
