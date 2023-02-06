@@ -44,7 +44,7 @@
     "react-dom": "^18.2.0",
     "react-redux": "8.0.5",
     "react-select": "^3.0.8",
-    "redux": "4.0.4",
+    "redux": "4.2.1",
     "superagent": "8.0.8",
     "style-loader": "^3.3.1",
     "css-loader": "^6.7.3"
