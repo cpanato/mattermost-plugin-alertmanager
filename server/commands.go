@@ -55,9 +55,9 @@ func getAutocompleteData() *model.AutocompleteData {
 	silences := model.NewAutocompleteData("silences", "", "List the existing silences")
 	root.AddCommand(silences)
 
-	expireSilence := model.NewAutocompleteData("expire_silence", "[configuration number] [silence ID]", "TODList the version and uptime of the Alertmanager instance")
-	expireSilence.AddTextArgument("The number of the alert configuration", "[configuration number]", "")
-	expireSilence.AddTextArgument("The ID of the silence to expire", "[silence ID]", "")
+	expireSilence := model.NewAutocompleteData("expire_silence", "[AlertManager Config ID] [Silence ID]", "Expire an existing silence")
+	expireSilence.AddTextArgument("The number of the alert configuration", "[AlertManager Config ID]", "")
+	expireSilence.AddTextArgument("The ID of the silence to expire", "[Silence ID]", "")
 	root.AddCommand(expireSilence)
 
 	status := model.NewAutocompleteData("status", "", "List the version and uptime of the Alertmanager instance")
@@ -162,7 +162,7 @@ func (p *Plugin) handleAlert(args *model.CommandArgs) (string, error) {
 			fields = addFields(fields, "Resolved", strconv.FormatBool(alert.Resolved()), false)
 			fields = addFields(fields, "Start At", alert.StartsAt.String(), false)
 			fields = addFields(fields, "Ended At", alert.EndsAt.String(), false)
-			fields = addFields(fields, "AlertManagerPluginId", alertConfig.ID, false)
+			fields = addFields(fields, "AlertManager Config ID", alertConfig.ID, false)
 			attachment := &model.SlackAttachment{
 				Title:  alert.Name(),
 				Fields: fields,
@@ -338,7 +338,7 @@ func ConvertSilenceToSlackAttachment(silence types.Silence, config alertConfig, 
 			matchers += fmt.Sprintf(`%s="%s"`, m.Name, m.Value)
 		}
 	}
-	fields = addFields(fields, "State", string(silence.Status.State), false)
+	fields = addFields(fields, "State", string(silence.Status.State), true)
 	fields = addFields(fields, "Matchers", matchers, false)
 	resolved := alertmanager.Resolved(silence)
 	if !resolved {
@@ -358,8 +358,8 @@ func ConvertSilenceToSlackAttachment(silence types.Silence, config alertConfig, 
 		fields = addFields(fields, "", duration, false)
 	}
 	fields = addFields(fields, "Comments", silence.Comment, false)
-	fields = addFields(fields, "Created by", silence.CreatedBy, false)
-	fields = addFields(fields, "AlertManagerPluginId", config.ID, false)
+	fields = addFields(fields, "Created by", silence.CreatedBy, true)
+	fields = addFields(fields, "AlertManager Config ID", config.ID, true)
 
 	color := colorResolved
 	if string(silence.Status.State) == "active" {
@@ -379,7 +379,7 @@ func ConvertSilenceToSlackAttachment(silence types.Silence, config alertConfig, 
 		},
 	}
 	attachment := &model.SlackAttachment{
-		Title:  silence.ID,
+		Title:  fmt.Sprintf("Silence ID: %s", silence.ID),
 		Fields: fields,
 		Color:  color,
 		Actions: []*model.PostAction{
