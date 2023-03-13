@@ -111,7 +111,7 @@ func ConvertAlertToFields(config alertConfig, alert template.Alert, externalURL,
 
 	/* second field: Labels only */
 	msg = ""
-	alert.Labels["AlertManagerPluginId"] = config.ID
+	alert.Labels["AlertManager Config ID"] = config.ID
 	labels := make([]string, 0, len(alert.Labels))
 	for k := range alert.Labels {
 		labels = append(labels, k)
