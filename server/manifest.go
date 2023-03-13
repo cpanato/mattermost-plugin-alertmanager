@@ -5,5 +5,5 @@ var manifest = struct {
 	Version string
 }{
 	ID:      "alertmanager",
-	Version: "0.2.0",
+	Version: "0.4.1",
 }
