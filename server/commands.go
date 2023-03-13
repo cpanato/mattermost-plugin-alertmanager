@@ -160,11 +160,11 @@ func (p *Plugin) handleAlert(args *model.CommandArgs) (string, error) {
 				fields = addFields(fields, string(k), string(v), true)
 			}
 			fields = addFields(fields, "Resolved", strconv.FormatBool(alert.Resolved()), false)
-			fields = addFields(fields, "Start At", alert.StartsAt.String(), false)
-			fields = addFields(fields, "Ended At", alert.EndsAt.String(), false)
-			fields = addFields(fields, "AlertManager Config ID", alertConfig.ID, false)
+			fields = addFields(fields, "Start At", alert.StartsAt.String(), true)
+			fields = addFields(fields, "Ended At", alert.EndsAt.String(), true)
+			fields = addFields(fields, "AlertManager Config ID", alertConfig.ID, true)
 			attachment := &model.SlackAttachment{
-				Title:  alert.Name(),
+				Title:  fmt.Sprintf("Alert Name: %s", alert.Name()),
 				Fields: fields,
 				Color:  setColor(string(alert.Status())),
 			}
