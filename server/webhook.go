@@ -29,6 +29,11 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request, alertConf
 		return
 	}
 
+	if message == (webhook.Message{}) {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
 	var fields []*model.SlackAttachmentField
 	for _, alert := range message.Alerts {
 		fields = append(fields, ConvertAlertToFields(alertConfig, alert, message.ExternalURL, message.Receiver)...)
