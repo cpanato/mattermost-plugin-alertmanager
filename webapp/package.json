@@ -47,6 +47,6 @@
     "redux": "4.2.1",
     "superagent": "8.0.9",
     "style-loader": "^3.3.2",
-    "css-loader": "^6.7.3"
+    "css-loader": "^6.7.4"
   }
 }
