@@ -9,7 +9,7 @@ require (
 	// mmgoget: github.com/mattermost/mattermost-server/v6@v7.4.0 is replaced by -> github.com/mattermost/mattermost-server/v6@8cb6718a9b
 	github.com/mattermost/mattermost-server/v6 v6.0.0-20221109191448-21aec2741bfe
 	github.com/prometheus/alertmanager v0.25.0
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.8.4
 	golang.org/x/text v0.9.0
 )
 
