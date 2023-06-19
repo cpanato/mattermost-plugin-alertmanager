@@ -5,7 +5,7 @@ go 1.20
 require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/hako/durafmt v0.0.0-20210608085754-5c1018a4e16b
-	github.com/mattermost/mattermost-plugin-api v0.1.3
+	github.com/mattermost/mattermost-plugin-api v0.1.4
 	// mmgoget: github.com/mattermost/mattermost-server/v6@v7.4.0 is replaced by -> github.com/mattermost/mattermost-server/v6@8cb6718a9b
 	github.com/mattermost/mattermost-server/v6 v6.0.0-20221109191448-21aec2741bfe
 	github.com/prometheus/alertmanager v0.25.0
