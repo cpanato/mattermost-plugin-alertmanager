@@ -10,7 +10,7 @@ require (
 	github.com/mattermost/mattermost-server/v6 v6.0.0-20221109191448-21aec2741bfe
 	github.com/prometheus/alertmanager v0.26.0
 	github.com/stretchr/testify v1.8.4
-	golang.org/x/text v0.11.0
+	golang.org/x/text v0.13.0
 )
 
 require (
