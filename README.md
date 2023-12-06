@@ -41,6 +41,16 @@ Next, to configure the plugin, follow these steps:
 ```
 https://SITEURL/plugins/alertmanager/api/webhook?token=TOKEN
 ```
+Sometimes the token has to be quoted.
+
+Example alertmanager config:
+
+```yaml
+webhook_configs:
+  - send_resolved: true
+    url: "https://mattermost.example.org/plugins/alertmanager/api/webhook?token='xxxxxxxxxxxxxxxxxxx-yyyyyyy'"
+```
+
 
 ## Plugin in Action
 
