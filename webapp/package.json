@@ -46,7 +46,7 @@
     "react-select": "^5.8.0",
     "redux": "5.0.1",
     "superagent": "8.1.2",
-    "style-loader": "^3.3.3",
+    "style-loader": "^3.3.4",
     "css-loader": "^6.8.1"
   }
 }
