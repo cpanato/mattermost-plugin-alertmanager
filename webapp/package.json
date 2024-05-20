@@ -37,7 +37,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "core-js": "3.36.1",
+    "core-js": "3.37.1",
     "lodash": "^4.17.21",
     "mattermost-redux": "5.33.1",
     "react": "18.2.0",
