@@ -7,13 +7,15 @@ const AMAttribute = (props) => {
         channel: "",
         team: "",
         token: "",
-
+        user: "",
+        password: "",
     } : {
         alertmanagerurl: props.attributes.alertmanagerurl? props.attributes.alertmanagerurl: "",
         channel: props.attributes.channel? props.attributes.channel : "",
         team: props.attributes.team ? props.attributes.team: "",
         token: props.attributes.token? props.attributes.token: "",
-
+        user: props.attributes.user ? props.attributes.user: "",
+        password: props.attributes.password ? props.attributes.password: "",
     };
 
     const initErrors = {
@@ -181,6 +183,32 @@ const AMAttribute = (props) => {
                         "alertmanagerurl",
                         handleURLInput,
                         (<span>{"The URL of your AlertManager instance, e.g. \'"}<a href="http://alertmanager.example.com/" rel="noopener noreferrer" target="_blank">{"http://alertmanager.example.com/"}</a>{"\'"}</span>)
+                        )
+                    }
+
+                    { generateSimpleStringInputSetting(
+                        "User:",
+                        "user",
+                        (e) => {
+                            let newSettings = {...settings};
+                            newSettings = {...newSettings, user: e.target.value};
+                            setSettings(newSettings);
+                            props.onChange({id: props.id, attributes: newSettings});
+                        },
+                        (<span>{"Optional: Username for basic auth authentication"}</span>)
+                        )
+                    }
+
+                    { generateSimpleStringInputSetting(
+                        "Password:",
+                        "password",
+                        (e) => {
+                            let newSettings = {...settings};
+                            newSettings = {...newSettings, password: e.target.value};
+                            setSettings(newSettings);
+                            props.onChange({id: props.id, attributes: newSettings});
+                        },
+                        (<span>{"Optional: Password for basic auth authentication"}</span>)
                         )
                     }
                 </div>
