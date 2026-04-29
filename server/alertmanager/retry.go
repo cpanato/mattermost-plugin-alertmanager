@@ -17,7 +17,7 @@ func httpBackoff() *backoff.ExponentialBackOff {
 	return b
 }
 
-func httpRetry(method string, url string) (*http.Response, error) {
+func httpRetry(method string, url string, username string, password string) (*http.Response, error) {
 	var resp *http.Response
 	var err error
 
@@ -28,6 +28,10 @@ func httpRetry(method string, url string) (*http.Response, error) {
 		req, errReq := http.NewRequest(method, url, nil)
 		if errReq != nil {
 			return errReq
+		}
+
+		if username != "" && password != "" {
+			req.SetBasicAuth(username, password)
 		}
 
 		req = req.WithContext(ctx)

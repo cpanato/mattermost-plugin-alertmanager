@@ -28,6 +28,8 @@ type alertConfig struct {
 	Channel         string
 	Team            string
 	AlertManagerURL string
+	User            string
+	Password        string
 }
 
 func (ac *alertConfig) IsValid() error {
