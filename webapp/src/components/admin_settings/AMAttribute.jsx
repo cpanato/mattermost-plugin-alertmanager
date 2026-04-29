@@ -90,7 +90,7 @@ const AMAttribute = (props) => {
         props.onChange({id: props.id, attributes:newSettings});
     }
 
-    const generateSimpleStringInputSetting = ( title, settingName, onChangeFunction, helpTextJSX) => {
+    const generateSimpleStringInputSetting = ( title, settingName, onChangeFunction, helpTextJSX, isPassword = false) => {
         return (
             <div className="form-group" >
             <label className="control-label col-sm-4">
@@ -100,9 +100,10 @@ const AMAttribute = (props) => {
                 <input
                     id={`PluginSettings.Plugins.alertmanager.${settingName + "." + settings.id}`}
                     className="form-control"
-                    type="input"
+                    type={isPassword ? "password" : "text"}
                     onChange={onChangeFunction}
                     value={settings[settingName]}
+                    autoComplete={isPassword ? "new-password" : "off"}
                 />
                 <div className="help-text">
                     {helpTextJSX}
@@ -157,7 +158,7 @@ const AMAttribute = (props) => {
                         "Team Name:",
                         "team",
                         handleTeamNameInput,
-                        (<span>{"Team you want to send messages to. Use the team name such as \'my-team\', instead of the display name."}</span>)
+                        (<span>{"Team you want to send messages to. Use the team name such as \\'my-team\\', instead of the display name."}</span>)
                         )
                     }
 
@@ -182,7 +183,7 @@ const AMAttribute = (props) => {
                         "AlertManager URL:",
                         "alertmanagerurl",
                         handleURLInput,
-                        (<span>{"The URL of your AlertManager instance, e.g. \'"}<a href="http://alertmanager.example.com/" rel="noopener noreferrer" target="_blank">{"http://alertmanager.example.com/"}</a>{"\'"}</span>)
+                        (<span>{"The URL of your AlertManager instance, e.g. \\'"}<a href="http://alertmanager.example.com/" rel="noopener noreferrer" target="_blank">{"http://alertmanager.example.com/"}</a>{"\\'"}</span>)
                         )
                     }
 
@@ -208,7 +209,8 @@ const AMAttribute = (props) => {
                             setSettings(newSettings);
                             props.onChange({id: props.id, attributes: newSettings});
                         },
-                        (<span>{"Optional: Password for basic auth authentication"}</span>)
+                        (<span>{"Optional: Password for basic auth authentication"}</span>),
+                        true
                         )
                     }
                 </div>
