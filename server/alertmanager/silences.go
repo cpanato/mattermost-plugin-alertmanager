@@ -13,8 +13,8 @@ import (
 )
 
 // ListSilences returns a slice of Silence and an error.
-func ListSilences(alertmanagerURL string) ([]types.Silence, error) {
-	resp, err := httpRetry(http.MethodGet, alertmanagerURL+"/api/v2/silences")
+func ListSilences(alertmanagerURL string, username string, password string) ([]types.Silence, error) {
+	resp, err := httpRetry(http.MethodGet, alertmanagerURL+"/api/v2/silences", username, password)
 	if err != nil {
 		return nil, err
 	}
@@ -35,13 +35,13 @@ func ListSilences(alertmanagerURL string) ([]types.Silence, error) {
 }
 
 // DeleteSilence delete a silence by ID.
-func ExpireSilence(silenceID, alertmanagerURL string) error {
+func ExpireSilence(silenceID, alertmanagerURL string, username string, password string) error {
 	if silenceID == "" {
 		return fmt.Errorf("silence ID cannot be empty")
 	}
 
 	expireSilence := fmt.Sprintf("%s/api/v2/silence/%s", alertmanagerURL, silenceID)
-	resp, err := httpRetry(http.MethodDelete, expireSilence)
+	resp, err := httpRetry(http.MethodDelete, expireSilence, username, password)
 	if err != nil {
 		return err
 	}
