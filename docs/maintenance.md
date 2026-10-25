@@ -22,8 +22,9 @@ legacy React API dependency. React 18 stays as the development dependency so the
 source can target both the ESR and the React 19 host. Redux, mattermost-redux,
 Superagent, Lodash and Node crypto polyfills were unused and removed. Tokens
 now use browser `crypto.getRandomValues`. Node 24 is the build baseline.
-ESLint stays on 9 because eslint-plugin-react 7.37.5 does not support ESLint 10;
-upgrade them together once the upstream peer dependency permits it.
+ESLint 10 tracks JSX references directly. The old eslint-plugin-react dependency
+was used only for JSX reference tracking and has been removed. The React import
+is retained for the classic JSX transform.
 
 Other fixes include configuration cloning, channel-map locking, avoiding plugin
 reactivation inside the initial configuration hook, immutable settings updates,
