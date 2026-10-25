@@ -67,9 +67,9 @@ func TestWebhook(t *testing.T) {
 
 func TestConvertAlertDoesNotMutateLabels(t *testing.T) {
 	alert := template.Alert{Labels: template.KV{"alertname": "test"}}
-	require.NotEmpty(t, ConvertAlertToFields(alertConfig{ID: "0"}, alert, "", ""))
+	require.NotEmpty(t, convertAlertToAttachment(alertConfig{ID: "0"}, alert, "", ""))
 	require.Equal(t, template.KV{"alertname": "test"}, alert.Labels)
-	require.NotPanics(t, func() { ConvertAlertToFields(alertConfig{ID: "0"}, template.Alert{}, "", "") })
+	require.NotPanics(t, func() { convertAlertToAttachment(alertConfig{ID: "0"}, template.Alert{}, "", "") })
 }
 
 func TestWebhookRoutesByToken(t *testing.T) {

@@ -168,7 +168,7 @@ func (p *Plugin) handleAlert(args *model.CommandArgs) (string, error) {
 			attachment := &model.MessageAttachment{
 				Title:  fmt.Sprintf("Alert Name: %s", alert.Name()),
 				Fields: fields,
-				Color:  setColor(string(alert.Status())),
+				Color:  setColor(string(alert.Status()), string(alert.Labels["severity"])),
 			}
 			attachments = append(attachments, attachment)
 		}
