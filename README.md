@@ -148,6 +148,9 @@ For installation settings and signature requirements, see the official
 For certificate errors and command timeouts, see the
 [connection troubleshooting guide](docs/troubleshooting.md).
 
+For duplicate notifications with multiple Alertmanager replicas, see the
+[HA setup and local test](docs/high-availability.md).
+
 ## Plugin in action
 
 The screenshots below use Mattermost 11.7.14, a local demo channel and sample alerts.

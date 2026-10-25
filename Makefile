@@ -287,3 +287,18 @@ dev-down:
 .PHONY: dev-smoke
 dev-smoke:
 	cd build && $(GO) run ./smoke
+
+## Starts three Alertmanager peers alongside the local Mattermost stack.
+.PHONY: dev-ha-up
+dev-ha-up:
+	docker compose -f hack/docker-compose.yaml -f hack/docker-compose.ha.yaml up -d --wait --wait-timeout 300
+
+## Verifies one firing/resolved notification when all three peers receive an alert.
+.PHONY: dev-ha-smoke
+dev-ha-smoke:
+	cd build && $(GO) run ./smoke -ha
+
+## Stops the local HA stack, keeping its data for the next run.
+.PHONY: dev-ha-down
+dev-ha-down:
+	docker compose -f hack/docker-compose.yaml -f hack/docker-compose.ha.yaml down

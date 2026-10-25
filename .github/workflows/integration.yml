@@ -29,9 +29,11 @@ jobs:
           cache-dependency-path: webapp/package-lock.json
       - name: Start, install and test
         run: make dev-up dev-setup dev-smoke
+      - name: Verify Alertmanager HA deduplication
+        run: make dev-ha-up dev-ha-smoke
       - name: Container logs
         if: failure()
-        run: docker compose -f hack/docker-compose.yaml logs --tail=100
+        run: docker compose -f hack/docker-compose.yaml -f hack/docker-compose.ha.yaml logs --tail=100
       - name: Stop containers
         if: always()
-        run: make dev-down
+        run: make dev-ha-down

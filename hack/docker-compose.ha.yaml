@@ -1,0 +1,32 @@
+# Overlay for the disposable local stack; cluster traffic stays on its network.
+services:
+  alertmanager:
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --cluster.listen-address=0.0.0.0:9094
+      - --cluster.peer=alertmanager-2:9094
+      - --cluster.peer=alertmanager-3:9094
+
+  alertmanager-2:
+    image: quay.io/prometheus/alertmanager:v0.34.1
+    ports:
+      - '127.0.0.1:9095:9093'
+    volumes:
+      - ./config.yml:/etc/alertmanager/alertmanager.yml:ro
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --cluster.listen-address=0.0.0.0:9094
+      - --cluster.peer=alertmanager:9094
+      - --cluster.peer=alertmanager-3:9094
+
+  alertmanager-3:
+    image: quay.io/prometheus/alertmanager:v0.34.1
+    ports:
+      - '127.0.0.1:9096:9093'
+    volumes:
+      - ./config.yml:/etc/alertmanager/alertmanager.yml:ro
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --cluster.listen-address=0.0.0.0:9094
+      - --cluster.peer=alertmanager:9094
+      - --cluster.peer=alertmanager-2:9094
