@@ -16,6 +16,9 @@ The minimum server version has increased from 7.5. See the
 [maintenance assessment](docs/maintenance.md) for SDK migration details, React
 18/19 compatibility considerations, and the release checklist.
 
+See the [issue triage](docs/issue-triage.md) for open reports ordered by effort,
+their impact, and the evidence needed to close or implement each one.
+
 ## Quick local test
 
 Use a disposable local instance with no existing Mattermost on port 8065:
