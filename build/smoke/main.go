@@ -50,7 +50,7 @@ func run() error {
 	name := fmt.Sprintf("SmokeTest%d", time.Now().UnixNano())
 	startsAt := time.Now().UTC().Add(-10 * time.Second)
 	payload := []map[string]any{{
-		"labels":      map[string]string{"alertname": name, "service": "local-smoke"},
+		"labels":      map[string]string{"alertname": name, "service": "local-smoke", "severity": "warning"},
 		"annotations": map[string]string{"summary": "Automated integration test"},
 		"startsAt":    startsAt, "endsAt": time.Now().UTC().Add(5 * time.Minute),
 	}}
@@ -75,7 +75,7 @@ func run() error {
 		}
 		return nil
 	}
-	waitForPost := func(status string) error {
+	waitForPost := func(status, color string) error {
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 		for {
@@ -89,6 +89,11 @@ func run() error {
 					return err
 				}
 				if post.UserId == bot.Id && strings.Contains(string(data), name) && strings.Contains(string(data), status) {
+					for _, attachment := range post.Attachments() {
+						if attachment.Color != color {
+							return fmt.Errorf("%s notification color: got %s, want %s", status, attachment.Color, color)
+						}
+					}
 					fmt.Printf("PASS: %s notification posted by bot\n", status)
 					return nil
 				}
@@ -103,7 +108,7 @@ func run() error {
 	if err := send(); err != nil {
 		return err
 	}
-	if err := waitForPost("FIRING"); err != nil {
+	if err := waitForPost("FIRING", "#FFCC00"); err != nil {
 		return err
 	}
 	for _, command := range []string{"status", "alerts", "silences"} {
@@ -112,9 +117,28 @@ func run() error {
 		}
 		fmt.Printf("PASS: /alertmanager %s accepted\n", command)
 	}
+	posts, _, err := client.GetPostsForChannel(ctx, channel.Id, 0, 100, "", false, false)
+	if err != nil {
+		return err
+	}
+	listed := false
+	for _, post := range posts.Posts {
+		for _, attachment := range post.Attachments() {
+			if post.UserId == bot.Id && attachment.Title == "Alert Name: "+name {
+				if attachment.Color != "#FFCC00" {
+					return fmt.Errorf("listed warning color: got %s, want #FFCC00", attachment.Color)
+				}
+				listed = true
+			}
+		}
+	}
+	if !listed {
+		return fmt.Errorf("/alertmanager alerts did not list the warning alert")
+	}
+	fmt.Println("PASS: /alertmanager alerts uses warning severity color")
 	payload[0]["endsAt"] = time.Now().UTC().Add(-time.Second)
 	if err := send(); err != nil {
 		return err
 	}
-	return waitForPost("RESOLVED")
+	return waitForPost("RESOLVED", "#008000")
 }
