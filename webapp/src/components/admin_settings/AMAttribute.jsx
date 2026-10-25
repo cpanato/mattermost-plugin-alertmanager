@@ -7,13 +7,15 @@ const AMAttribute = (props) => {
         channel: "",
         team: "",
         token: "",
-
+        user: "",
+        password: "",
     } : {
         alertmanagerurl: props.attributes.alertmanagerurl? props.attributes.alertmanagerurl: "",
         channel: props.attributes.channel? props.attributes.channel : "",
         team: props.attributes.team ? props.attributes.team: "",
         token: props.attributes.token? props.attributes.token: "",
-
+        user: props.attributes.user ? props.attributes.user: "",
+        password: props.attributes.password ? props.attributes.password: "",
     };
 
     const initErrors = {
@@ -88,7 +90,7 @@ const AMAttribute = (props) => {
         props.onChange({id: props.id, attributes:newSettings});
     }
 
-    const generateSimpleStringInputSetting = ( title, settingName, onChangeFunction, helpTextJSX) => {
+    const generateSimpleStringInputSetting = ( title, settingName, onChangeFunction, helpTextJSX, isPassword = false) => {
         return (
             <div className="form-group" >
             <label className="control-label col-sm-4">
@@ -98,9 +100,10 @@ const AMAttribute = (props) => {
                 <input
                     id={`PluginSettings.Plugins.alertmanager.${settingName + "." + settings.id}`}
                     className="form-control"
-                    type="input"
+                    type={isPassword ? "password" : "text"}
                     onChange={onChangeFunction}
                     value={settings[settingName]}
+                    autoComplete={isPassword ? "new-password" : "off"}
                 />
                 <div className="help-text">
                     {helpTextJSX}
@@ -155,7 +158,7 @@ const AMAttribute = (props) => {
                         "Team Name:",
                         "team",
                         handleTeamNameInput,
-                        (<span>{"Team you want to send messages to. Use the team name such as \'my-team\', instead of the display name."}</span>)
+                        (<span>{"Team you want to send messages to. Use the team name such as \\'my-team\\', instead of the display name."}</span>)
                         )
                     }
 
@@ -180,7 +183,34 @@ const AMAttribute = (props) => {
                         "AlertManager URL:",
                         "alertmanagerurl",
                         handleURLInput,
-                        (<span>{"The URL of your AlertManager instance, e.g. \'"}<a href="http://alertmanager.example.com/" rel="noopener noreferrer" target="_blank">{"http://alertmanager.example.com/"}</a>{"\'"}</span>)
+                        (<span>{"The URL of your AlertManager instance, e.g. \\'"}<a href="http://alertmanager.example.com/" rel="noopener noreferrer" target="_blank">{"http://alertmanager.example.com/"}</a>{"\\'"}</span>)
+                        )
+                    }
+
+                    { generateSimpleStringInputSetting(
+                        "User:",
+                        "user",
+                        (e) => {
+                            let newSettings = {...settings};
+                            newSettings = {...newSettings, user: e.target.value};
+                            setSettings(newSettings);
+                            props.onChange({id: props.id, attributes: newSettings});
+                        },
+                        (<span>{"Optional: Username for basic auth authentication"}</span>)
+                        )
+                    }
+
+                    { generateSimpleStringInputSetting(
+                        "Password:",
+                        "password",
+                        (e) => {
+                            let newSettings = {...settings};
+                            newSettings = {...newSettings, password: e.target.value};
+                            setSettings(newSettings);
+                            props.onChange({id: props.id, attributes: newSettings});
+                        },
+                        (<span>{"Optional: Password for basic auth authentication"}</span>),
+                        true
                         )
                     }
                 </div>
