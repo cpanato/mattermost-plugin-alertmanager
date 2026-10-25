@@ -18,6 +18,7 @@ checksum:
     - glob: ./dist/alertmanager-{{ .Version }}.tar.gz
 
 release:
+  prerelease: auto
   github:
     owner: cpanato
     name: mattermost-plugin-alertmanager

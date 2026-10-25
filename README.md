@@ -1,6 +1,7 @@
-# Alertmanager Plugin for Mattermost
+# Prometheus Alertmanager Plugin for Mattermost
 
-Receive Alertmanager webhooks in Mattermost, list alerts and silences, check
+Connect [Prometheus Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/)
+to Mattermost. Receive its webhooks, list alerts and silences, check
 Alertmanager status, and expire silences using `/alertmanager` commands or buttons.
 Supports multiple Alertmanager/channel configurations and creates a bot account.
 
@@ -64,7 +65,7 @@ when comparing different server versions.
 ```sh
 make test                     # Go tests with the race detector, including build tools
 make check-style              # ESLint and golangci-lint v2.15.0
-make dist                     # dist/alertmanager-0.4.1.tar.gz
+make dist                     # dist/alertmanager-0.5.0-rc.1.tar.gz
 ```
 
 There are no automated web UI tests yet. The web build validates JSX/TypeScript
@@ -103,6 +104,16 @@ For installation settings and signature requirements, see the official
 
 ## Plugin in action
 
-![Alerts](assets/alertmanager-1.png)
-![Silences](assets/alertmanager-2.png)
-![Commands](assets/alertmanager-3.png)
+The screenshots below use Mattermost 11.7.14, a local demo channel and sample alerts.
+
+Configure the team, channel, token and Alertmanager endpoint:
+
+![Plugin settings](assets/alertmanager-1.png)
+
+Receive a Prometheus Alertmanager notification:
+
+![Alert notification](assets/alertmanager-2.png)
+
+List active silences and expire one using its action button:
+
+![Active silence](assets/alertmanager-3.png)

@@ -51,9 +51,14 @@ posts, and acceptance of the status, alerts and silences commands. Each server
 used separate Docker volumes and PostgreSQL 17.7. The ESR was then upgraded to
 PostgreSQL 17.10 and its smoke test passed again. It is left running for exploration.
 The same API smoke test is available as `make dev-smoke` and in the manually
-triggered integration workflow. It does not exercise browser interactions or
-assert slash-command response contents; the UI and silence-action release
-checks above remain manual.
+triggered integration workflow. Its committed checks cover API delivery and
+command acceptance. Additional RC validation checked actual status output and
+silence listing/expiration through commands and the Mattermost post-action API
+on both server versions. Browser checks on Mattermost 11.7.14 (React 18) and
+12.0.0 (React 19) passed for adding/editing a configuration, generating a token,
+saving/reloading it, and confirming/saving deletion. Activation after restart
+was also checked on the ESR. The refreshed README screenshots were captured
+from a separate local demo channel on the ESR.
 
 Go race tests, ESLint, golangci-lint v2.15.0 (both modules), the five-platform
 bundle build, Compose validation and GoReleaser configuration validation passed.
