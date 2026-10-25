@@ -14,7 +14,7 @@ before:
   hooks:
     - make clean
     - make dist
-    - sh -c "cosign sign-blob --yes --timeout 360s --output-signature dist/alertmanager-{{ .Version }}.sig --output-certificate dist/alertmanager-{{ .Version }}.pem dist/alertmanager-{{ .Version }}.tar.gz"
+    - sh -c "cosign sign-blob --yes --timeout 360s --bundle dist/alertmanager-{{ .Version }}.sigstore.json dist/alertmanager-{{ .Version }}.tar.gz"
 
 checksum:
   extra_files:
@@ -28,5 +28,4 @@ release:
 
   extra_files:
     - glob: ./dist/alertmanager-{{ .Version }}.tar.gz
-    - glob: ./dist/alertmanager-{{ .Version }}.sig
-    - glob: ./dist/alertmanager-{{ .Version }}.pem
+    - glob: ./dist/alertmanager-{{ .Version }}.sigstore.json

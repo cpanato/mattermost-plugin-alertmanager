@@ -77,6 +77,37 @@ from the committed npm lockfile with `npm ci`.
 The manually triggered **Local integration test** workflow runs the Docker smoke
 test against Mattermost 11.7.14 and 12.0.0.
 
+## Verify release artifacts
+
+Releases built with Cosign 3 provide a `.sigstore.json` bundle containing the
+package signature, signing certificate and transparency-log verification data.
+Download it together with the plugin archive and checksums, then verify the
+archive against the release workflow's identity. Set `PLUGIN_VERSION` to the
+downloaded version without the `v` prefix:
+
+```sh
+PLUGIN_VERSION=x.y.z
+shasum -a 256 -c "mattermost-plugin-alertmanager_${PLUGIN_VERSION}_checksums.txt"
+cosign verify-blob \
+  --bundle "alertmanager-${PLUGIN_VERSION}.sigstore.json" \
+  --certificate-identity "https://github.com/cpanato/mattermost-plugin-alertmanager/.github/workflows/release.yml@refs/tags/v${PLUGIN_VERSION}" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  "alertmanager-${PLUGIN_VERSION}.tar.gz"
+```
+
+The existing `v0.5.0-rc.1` release uses the earlier `.sig` and `.pem` files.
+For that release, create a local verification bundle before running the
+`verify-blob` command above:
+
+```sh
+PLUGIN_VERSION=0.5.0-rc.1
+cosign bundle create \
+  --artifact "alertmanager-${PLUGIN_VERSION}.tar.gz" \
+  --signature "alertmanager-${PLUGIN_VERSION}.sig" \
+  --certificate "alertmanager-${PLUGIN_VERSION}.pem" \
+  --out "alertmanager-${PLUGIN_VERSION}.sigstore.json"
+```
+
 ## Installation
 
 1. Download a bundle from [releases](https://github.com/cpanato/mattermost-plugin-alertmanager/releases), or build it with `make dist`.
