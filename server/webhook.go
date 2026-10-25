@@ -12,16 +12,17 @@ import (
 	"golang.org/x/text/language"
 
 	"github.com/hako/durafmt"
-	"github.com/prometheus/alertmanager/notify/webhook"
 	"github.com/prometheus/alertmanager/template"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 )
 
 func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request, alertConfig alertConfig) {
 	p.API.LogInfo("Received alertmanager notification")
 
-	var message webhook.Message
+	// Decode the public webhook data without importing Alertmanager's notifier
+	// implementation and its transport/exporter dependencies.
+	var message template.Data
 	err := json.NewDecoder(r.Body).Decode(&message)
 	if err != nil {
 		p.API.LogError("failed to decode webhook message", "err", err.Error())
@@ -29,34 +30,43 @@ func (p *Plugin) handleWebhook(w http.ResponseWriter, r *http.Request, alertConf
 		return
 	}
 
-	if message == (webhook.Message{}) {
+	if len(message.Alerts) == 0 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	var fields []*model.SlackAttachmentField
+	var fields []*model.MessageAttachmentField
 	for _, alert := range message.Alerts {
 		fields = append(fields, ConvertAlertToFields(alertConfig, alert, message.ExternalURL, message.Receiver)...)
 	}
 
-	attachment := &model.SlackAttachment{
+	attachment := &model.MessageAttachment{
 		Fields: fields,
 		Color:  setColor(message.Status),
 	}
 
+	p.channelLock.RLock()
+	channelID := p.AlertConfigIDChannelID[alertConfig.ID]
+	p.channelLock.RUnlock()
+	if channelID == "" {
+		http.Error(w, "alert channel is unavailable", http.StatusServiceUnavailable)
+		return
+	}
 	post := &model.Post{
-		ChannelId: p.AlertConfigIDChannelID[alertConfig.ID],
+		ChannelId: channelID,
 		UserId:    p.BotUserID,
 	}
 
-	model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
+	model.ParseMessageAttachment(post, []*model.MessageAttachment{attachment})
 	if _, appErr := p.API.CreatePost(post); appErr != nil {
+		p.API.LogError("failed to create alert post", "err", appErr.Error())
+		http.Error(w, "failed to create alert post", http.StatusInternalServerError)
 		return
 	}
 }
 
-func addFields(fields []*model.SlackAttachmentField, title, msg string, short bool) []*model.SlackAttachmentField {
-	return append(fields, &model.SlackAttachmentField{
+func addFields(fields []*model.MessageAttachmentField, title, msg string, short bool) []*model.MessageAttachmentField {
+	return append(fields, &model.MessageAttachmentField{
 		Title: title,
 		Value: msg,
 		Short: model.SlackCompatibleBool(short),
@@ -76,8 +86,8 @@ func setColor(impact string) string {
 	return colorExpired
 }
 
-func ConvertAlertToFields(config alertConfig, alert template.Alert, externalURL, receiver string) []*model.SlackAttachmentField {
-	var fields []*model.SlackAttachmentField
+func ConvertAlertToFields(config alertConfig, alert template.Alert, externalURL, receiver string) []*model.MessageAttachmentField {
+	var fields []*model.MessageAttachmentField
 
 	statusMsg := strings.ToUpper(alert.Status)
 	if alert.Status == "firing" {
@@ -111,6 +121,11 @@ func ConvertAlertToFields(config alertConfig, alert template.Alert, externalURL,
 
 	/* second field: Labels only */
 	msg = ""
+	labelsCopy := make(template.KV, len(alert.Labels)+1)
+	for k, v := range alert.Labels {
+		labelsCopy[k] = v
+	}
+	alert.Labels = labelsCopy
 	alert.Labels["AlertManager Config ID"] = config.ID
 	labels := make([]string, 0, len(alert.Labels))
 	for k := range alert.Labels {

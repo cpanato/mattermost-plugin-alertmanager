@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	pluginapi "github.com/mattermost/mattermost-plugin-api"
-	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/plugin"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/plugin"
+	pluginapi "github.com/mattermost/mattermost/server/public/pluginapi"
 
 	root "github.com/cpanato/mattermost-plugin-alertmanager"
 )
@@ -28,6 +28,7 @@ type Plugin struct {
 
 	// key - alert config id, value - existing or created channel id received from api
 	AlertConfigIDChannelID map[string]string
+	channelLock            sync.RWMutex
 	BotUserID              string
 
 	// configurationLock synchronizes access to the configuration.
@@ -50,16 +51,8 @@ func (p *Plugin) OnActivate() error {
 	}
 	p.BotUserID = botID
 
-	configuration := p.getConfiguration()
-	p.AlertConfigIDChannelID = make(map[string]string)
-	for k, alertConfig := range configuration.AlertConfigs {
-		var channelID string
-		channelID, err = p.ensureAlertChannelExists(alertConfig)
-		if err != nil {
-			p.API.LogWarn(fmt.Sprintf("Failed to ensure alert channel %v", k), "error", err.Error())
-		} else {
-			p.AlertConfigIDChannelID[alertConfig.ID] = channelID
-		}
+	if err := p.refreshAlertChannels(); err != nil {
+		return err
 	}
 
 	command, err := p.getCommand()
@@ -72,6 +65,22 @@ func (p *Plugin) OnActivate() error {
 		return fmt.Errorf("failed to register command: %w", err)
 	}
 
+	return nil
+}
+
+func (p *Plugin) refreshAlertChannels() error {
+	channels := make(map[string]string)
+	for id, config := range p.getConfiguration().AlertConfigs {
+		channelID, err := p.ensureAlertChannelExists(config)
+		if err != nil {
+			p.API.LogWarn("Failed to ensure alert channel", "id", id, "error", err.Error())
+			continue
+		}
+		channels[id] = channelID
+	}
+	p.channelLock.Lock()
+	p.AlertConfigIDChannelID = channels
+	p.channelLock.Unlock()
 	return nil
 }
 
@@ -117,6 +126,11 @@ func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Req
 	}
 
 	invalidOrMissingTokenErr := "Invalid or missing token"
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", "GET, POST")
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
 	token := r.URL.Query().Get("token")
 	if token == "" {
 		http.Error(w, invalidOrMissingTokenErr, http.StatusBadRequest)
@@ -139,4 +153,10 @@ func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Req
 	}
 
 	http.Error(w, invalidOrMissingTokenErr, http.StatusBadRequest)
+}
+
+func (p *Plugin) alertChannelID(id string) string {
+	p.channelLock.RLock()
+	defer p.channelLock.RUnlock()
+	return p.AlertConfigIDChannelID[id]
 }

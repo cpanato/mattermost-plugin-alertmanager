@@ -18,7 +18,7 @@ const CustomAttributesSettings = (props) => {
     },[]);
 
     const initSettings = (newSettings) => {
-        if(!!newSettings) {
+        if(newSettings) {
             if(Object.keys(newSettings).length != 0) {
                 const newEntries = Object.entries(newSettings);
 
@@ -38,7 +38,7 @@ const CustomAttributesSettings = (props) => {
     }
 
     const handleChange = ( { id, attributes } ) => {
-        let newSettings = settings;
+        const newSettings = new Map(settings);
         newSettings.set(id, attributes);
 
         setSettings(newSettings);
@@ -52,7 +52,7 @@ const CustomAttributesSettings = (props) => {
 
         const nextKey = settings.size === 0 ? '0' :(parseInt([...settings.keys()].pop()) + 1).toString();
 
-        let newSettings = settings;
+        const newSettings = new Map(settings);
         newSettings.set(nextKey, {});
 
         setSettings(newSettings);
@@ -62,7 +62,7 @@ const CustomAttributesSettings = (props) => {
     }
 
     const handleDelete = (id) => {
-        let newSettings = settings;
+        const newSettings = new Map(settings);
         newSettings.delete(id);
 
         setSettings(newSettings);

@@ -3,10 +3,11 @@ package alertmanager
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
-	"github.com/cenkalti/backoff"
+	"github.com/cenkalti/backoff/v4"
 )
 
 func httpBackoff() *backoff.ExponentialBackOff {
@@ -22,37 +23,46 @@ func httpRetry(method string, url string) (*http.Response, error) {
 	var err error
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
 
 	fn := func() error {
 		req, errReq := http.NewRequest(method, url, nil)
 		if errReq != nil {
-			return errReq
+			return backoff.Permanent(errReq)
 		}
 
-		req = req.WithContext(ctx)
-		resp, err = http.DefaultClient.Do(req) // nolint: bodyclose
+		resp, err = http.DefaultClient.Do(req.WithContext(ctx))
 		if err != nil {
 			return err
 		}
 
-		switch method {
-		case http.MethodGet:
-			if resp.StatusCode != http.StatusOK {
-				return fmt.Errorf("status code is %d not 200", resp.StatusCode)
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			resp.Body.Close()
+			statusErr := fmt.Errorf("alertmanager returned HTTP %d", resp.StatusCode)
+			if resp.StatusCode < 500 && resp.StatusCode != http.StatusTooManyRequests {
+				return backoff.Permanent(statusErr)
 			}
-		case http.MethodPost:
-			if resp.StatusCode == http.StatusBadRequest {
-				return fmt.Errorf("status code is %d not 3xx", resp.StatusCode)
-			}
+			return statusErr
 		}
 
 		return nil
 	}
 
-	if errRetry := backoff.Retry(fn, httpBackoff()); errRetry != nil {
+	if errRetry := backoff.Retry(fn, backoff.WithContext(httpBackoff(), ctx)); errRetry != nil {
+		cancel()
 		return nil, errRetry
 	}
 
+	// The caller still needs the context while decoding the response body.
+	resp.Body = &responseBody{ReadCloser: resp.Body, cancel: cancel}
 	return resp, err
+}
+
+type responseBody struct {
+	io.ReadCloser
+	cancel context.CancelFunc
+}
+
+func (b *responseBody) Close() error {
+	defer b.cancel()
+	return b.ReadCloser.Close()
 }

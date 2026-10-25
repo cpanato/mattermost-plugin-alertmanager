@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/mattermost/mattermost-server/v6/model"
+	"github.com/mattermost/mattermost/server/public/model"
 
 	"github.com/cpanato/mattermost-plugin-alertmanager/server/alertmanager"
 )
@@ -32,11 +32,12 @@ func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request, aler
 	if err != nil {
 		msg := fmt.Sprintf("failed to expire the silence: %v", err)
 		encodeEphermalMessage(w, msg)
+		return
 	}
 
 	updatePost := &model.Post{}
 
-	attachments := []*model.SlackAttachment{}
+	attachments := []*model.MessageAttachment{}
 	actionPost, errPost := p.API.GetPost(action.PostID)
 	if errPost != nil {
 		p.API.LogError("AlerManager Update Post Error", "err=", errPost.Error())
@@ -59,7 +60,7 @@ func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request, aler
 						silenceMsg = fmt.Sprintf("Silence expired by %s", userName.Username)
 					}
 
-					field := &model.SlackAttachmentField{
+					field := &model.MessageAttachmentField{
 						Title: "Expired by",
 						Value: silenceMsg,
 						Short: false,
@@ -80,7 +81,7 @@ func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request, aler
 			}
 		}
 
-		model.ParseSlackAttachment(updatePost, attachments)
+		model.ParseMessageAttachment(updatePost, attachments)
 		updatePost.Id = actionPost.Id
 		updatePost.ChannelId = actionPost.ChannelId
 		updatePost.UserId = actionPost.UserId

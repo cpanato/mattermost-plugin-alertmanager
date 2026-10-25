@@ -24,3 +24,11 @@ updates:
     reviewers:
       - "cpanato"
     open-pull-requests-limit: 10
+
+  - package-ecosystem: gomod
+    directory: "/build"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    reviewers:
+      - "cpanato"

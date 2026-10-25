@@ -1,9 +1,62 @@
-version: '2'
-
 services:
-  alertmanager:
-    ports:
-    - 9093:9093
-    image: bitnami/alertmanager:latest
+  postgres:
+    image: postgres:17.10-alpine
+    environment:
+      POSTGRES_USER: mattermost
+      POSTGRES_PASSWORD: local-mattermost
+      POSTGRES_DB: mattermost
     volumes:
-      - ./config.yml:/opt/bitnami/alertmanager/conf/config.yml
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U mattermost]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  mattermost:
+    image: mattermost/mattermost-enterprise-edition:${MATTERMOST_VERSION:-11.7.14}
+    # The official server image runs under emulation on Apple Silicon.
+    platform: linux/amd64
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - '127.0.0.1:8065:8065'
+    environment:
+      MM_SERVICESETTINGS_SITEURL: http://localhost:8065
+      MM_SQLSETTINGS_DRIVERNAME: postgres
+      MM_SQLSETTINGS_DATASOURCE: postgres://mattermost:local-mattermost@postgres:5432/mattermost?sslmode=disable&connect_timeout=10
+      MM_PLUGINSETTINGS_ENABLE: 'true'
+      MM_PLUGINSETTINGS_ENABLEUPLOADS: 'true'
+      MM_PLUGINSETTINGS_REQUIREPLUGINSIGNATURE: 'false'
+      MM_SERVICESETTINGS_ENABLELOCALMODE: 'true'
+      MM_SERVICESETTINGS_ENABLEEMAILINVITATIONS: 'false'
+      MM_EMAILSETTINGS_SENDEMAILNOTIFICATIONS: 'false'
+      MM_TEAMSETTINGS_ENABLEOPENSERVER: 'true'
+    volumes:
+      - mattermost-config:/mattermost/config
+      - mattermost-data:/mattermost/data
+      - mattermost-logs:/mattermost/logs
+      - mattermost-plugins:/mattermost/plugins
+      - mattermost-client-plugins:/mattermost/client/plugins
+    healthcheck:
+      test: [CMD, /mattermost/bin/mmctl, --local, system, status]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+
+  alertmanager:
+    image: quay.io/prometheus/alertmanager:v0.34.1
+    ports:
+      - '127.0.0.1:9093:9093'
+    volumes:
+      - ./config.yml:/etc/alertmanager/alertmanager.yml:ro
+    command: ['--config.file=/etc/alertmanager/alertmanager.yml', '--cluster.listen-address=']
+
+volumes:
+  postgres-data:
+  mattermost-config:
+  mattermost-data:
+  mattermost-logs:
+  mattermost-plugins:
+  mattermost-client-plugins:
