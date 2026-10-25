@@ -53,7 +53,7 @@ func (ac *alertConfig) IsValid() error {
 // Clone shallow copies the configuration. Your implementation may require a deep copy if
 // your configuration has reference types.
 func (c *configuration) Clone() *configuration {
-	var clone configuration
+	clone := configuration{AlertConfigs: make(map[string]alertConfig, len(c.AlertConfigs))}
 	for k, v := range c.AlertConfigs {
 		clone.AlertConfigs[k] = v
 	}
@@ -122,5 +122,9 @@ func (p *Plugin) OnConfigurationChange() error {
 
 	p.setConfiguration(&configurationInstance)
 
-	return p.OnActivate()
+	// Mattermost calls this hook before OnActivate during startup.
+	if p.client == nil {
+		return nil
+	}
+	return p.refreshAlertChannels()
 }

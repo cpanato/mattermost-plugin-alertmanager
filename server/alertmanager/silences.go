@@ -8,18 +8,16 @@ import (
 	"net/http"
 	"sort"
 	"time"
-
-	"github.com/prometheus/alertmanager/types"
 )
 
 // ListSilences returns a slice of Silence and an error.
-func ListSilences(alertmanagerURL string) ([]types.Silence, error) {
+func ListSilences(alertmanagerURL string) ([]Silence, error) {
 	resp, err := httpRetry(http.MethodGet, alertmanagerURL+"/api/v2/silences")
 	if err != nil {
 		return nil, err
 	}
 
-	var silencesResponse []types.Silence
+	var silencesResponse []Silence
 	dec := json.NewDecoder(resp.Body)
 	defer resp.Body.Close()
 	if errDec := dec.Decode(&silencesResponse); errDec != nil {
@@ -59,7 +57,7 @@ func ExpireSilence(silenceID, alertmanagerURL string) error {
 }
 
 // Resolved returns if a silence is reolved by EndsAt
-func Resolved(s types.Silence) bool {
+func Resolved(s Silence) bool {
 	if s.EndsAt.IsZero() {
 		return false
 	}

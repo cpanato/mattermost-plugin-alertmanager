@@ -1,59 +1,108 @@
-# AlertManager Plugin
+# Alertmanager Plugin for Mattermost
 
-This plugin is the [AlertManager](https://github.com/prometheus/alertmanager) bot for Mattermost.
+Receive Alertmanager webhooks in Mattermost, list alerts and silences, check
+Alertmanager status, and expire silences using `/alertmanager` commands or buttons.
+Supports multiple Alertmanager/channel configurations and creates a bot account.
 
-Forked and inspired on https://github.com/metalmatze/alertmanager-bot the alertmanager for Telegram. Thanks so much [@metalmatze](https://github.com/metalmatze/)
+Inspired by [alertmanager-bot](https://github.com/metalmatze/alertmanager-bot).
 
-Some features:
---------------
- - Receive the Alerts via webhook
- - Can list existing alerts
- - Can list existing silences
- - Can expire a silence
+## Requirements
 
-TODO:
------
-  - Create silences
-  - Create alerts
-  - List expired silences
-  - Create and use a bot account
-  - Allow multiple webhooks/channels
+- Mattermost **11.7+** (the current ESR is the local development baseline).
+- Go **1.27.0+**, Node **24**, npm **10+** to build.
+- Docker Compose v2 for the local integration environment.
 
+The minimum server version has increased from 7.5. See the
+[maintenance assessment](docs/maintenance.md) for SDK migration details, React
+18/19 compatibility considerations, and the release checklist.
 
-**Supported Mattermost Server Versions: 5.37+**
+## Quick local test
+
+Use a disposable local instance with no existing Mattermost on port 8065:
+
+```sh
+nvm use
+make dev-up
+make dev-setup
+make dev-smoke
+make dev-alert
+```
+
+`dev-up` starts PostgreSQL, Mattermost 11.7.14 and Alertmanager 0.34.1, waiting
+for Mattermost to become healthy. The official Mattermost image uses amd64
+emulation on Apple Silicon. The first start downloads the images and can take
+several minutes.
+
+`dev-setup` builds the bundle, creates a local administrator and team, uploads
+and enables the plugin, and configures the `alerts` channel and webhook token.
+It is fixed to `http://localhost:8065` and replaces the plugin's local settings.
+
+Open <http://localhost:8065/alerts-dev/channels/alerts> and sign in:
+
+- Username: `alertmanager-dev`
+- Password: `Local-alertmanager-123!`
+
+`dev-smoke` automatically verifies firing and resolved posts from the bot and
+checks that the status, alerts and silences commands are accepted.
+
+`dev-alert` sends a firing alert through Alertmanager API v2. Wait for its post
+in the channel, then press Enter in the terminal to send the resolved update.
+Try `/alertmanager status`, `/alertmanager alerts` and `/alertmanager silences`.
+The Alertmanager UI is available at <http://localhost:9093>.
+
+```sh
+make dev-down     # stop containers and retain local data
+```
+
+To test another Mattermost version, set `MATTERMOST_VERSION` when starting the
+stack, for example `MATTERMOST_VERSION=12.0.0 make dev-up`. Database upgrades
+may prevent downgrading that same instance afterward; use fresh Docker volumes
+when comparing different server versions.
+
+## Automated checks and build
+
+```sh
+make test                     # Go tests with the race detector, including build tools
+make check-style              # ESLint and golangci-lint v2.15.0
+make dist                     # dist/alertmanager-0.4.1.tar.gz
+```
+
+There are no automated web UI tests yet. The web build validates JSX/TypeScript
+transpilation; manually exercise settings and the confirmation dialog before
+releasing. Go tests cover webhook delivery failures, configuration startup,
+label immutability, retries, delayed HTTP bodies and API v2 silence decoding.
+CI runs Go tests, web lint, and the bundle build. Dependencies are installed
+from the committed npm lockfile with `npm ci`.
+The manually triggered **Local integration test** workflow runs the Docker smoke
+test against Mattermost 11.7.14 and 12.0.0.
 
 ## Installation
 
-1. Go to the [releases page of this GitHub repository](https://github.com/cpanato/mattermost-plugin-alertmanager/releases) and download the latest release for your Mattermost server.
-2. Upload this file in the Mattermost **System Console > Plugins > Management** page to install the plugin, and enable it. To learn more about how to upload a plugin, [see the documentation](https://docs.mattermost.com/administration/plugins.html#plugin-uploads).
-
-Next, to configure the plugin, follow these steps:
-
-3. After you've uploaded the plugin in **System Console > Plugins > Management**, go to the plugin's settings page at **System Console > Plugins > AlertManager**.
-4. Specify the team and channel to send messages to. For each, use the URL of the team or channel instead of their respective display names.
-5. Specify the AlertManager Server URL.
-6. Generate the Token that will be use to validate the requests.
-7. Hit **Save**.
-8. Next, copy the **Token** above the **Save** button, which is used to configure the plugin for your AlertManager account.
-9. Go to your Alermanager configuration, paste the following webhook URL and specfiy the name of the service and the token you copied in step 9.
-10. Invite the `@alertmanagerbot` user to your target team and channel.
-
-```
-https://SITEURL/plugins/alertmanager/api/webhook?token=TOKEN
-```
-Sometimes the token has to be quoted.
-
-Example alertmanager config:
+1. Download a bundle from [releases](https://github.com/cpanato/mattermost-plugin-alertmanager/releases), or build it with `make dist`.
+2. Enable plugin uploads on the server with `PluginSettings.EnableUploads=true` and restart Mattermost.
+3. In **System Console > Plugins > Plugin Management**, upload the `.tar.gz` and enable the plugin.
+4. Open **Plugins > AlertManager** and add a configuration with the team and channel URL names, Alertmanager URL, and a generated token. Save it.
+5. Ensure `@alertmanagerbot` belongs to the target team and channel.
+6. Configure the Alertmanager receiver using the same token:
 
 ```yaml
-webhook_configs:
-  - send_resolved: true
-    url: "https://mattermost.example.org/plugins/alertmanager/api/webhook?token='xxxxxxxxxxxxxxxxxxx-yyyyyyy'"
+receivers:
+  - name: mattermost
+    webhook_configs:
+      - send_resolved: true
+        url: 'https://mattermost.example.org/plugins/alertmanager/api/webhook?token=YOUR_TOKEN'
 ```
 
+The token is part of the URL; do not add extra quotes around its value.
+Use a URL reachable from the Alertmanager container/server. Conversely, the
+Alertmanager URL in plugin settings must be reachable from the Mattermost
+server (the local stack uses `http://alertmanager:9093`).
 
-## Plugin in Action
+For installation settings and signature requirements, see the official
+[plugin management documentation](https://docs.mattermost.com/developers/integrate/plugins/using-and-managing-plugins).
 
-# ![alertmanager-bot-1](assets/alertmanager-1.png)
-# ![alertmanager-bot-2](assets/alertmanager-2.png)
-# ![alertmanager-bot-3](assets/alertmanager-3.png)
+## Plugin in action
+
+![Alerts](assets/alertmanager-1.png)
+![Silences](assets/alertmanager-2.png)
+![Commands](assets/alertmanager-3.png)

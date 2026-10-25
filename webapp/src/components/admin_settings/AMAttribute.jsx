@@ -1,5 +1,5 @@
-import React, { useState, useEffect} from 'react';
-import crypto from 'crypto';
+import React, { useState} from 'react';
+import PropTypes from 'prop-types';
 
 const AMAttribute = (props) => {
     const initialSettings = props.attributes === undefined || Object.keys(props.attributes).length === 0 ? {
@@ -70,16 +70,15 @@ const AMAttribute = (props) => {
         props.onChange({id: props.id, attributes: newSettings});
     }
 
-    const handleDelete = (e) => {
+    const handleDelete = () => {
         props.onDelete(props.id);
     }
 
     const regenerateToken = (e) => {
         e.preventDefault();
 
-        // Generate a 32 byte tokes. It must not include '*' and '/'.
-        // Copied from https://github.com/mattermost/mattermost-webapp/blob/33661c60bd05d708bcf85a49dad4d9fb3a39a75b/components/admin_console/generated_setting.tsx#L41
-        const token = crypto.randomBytes(256).toString('base64').substring(0, 32).replaceAll('+', '-').replaceAll('/', '_');
+        // Generate a URL-safe token with 192 bits of browser-provided randomness.
+        const token = Array.from(window.crypto.getRandomValues(new Uint8Array(24)), (byte) => byte.toString(16).padStart(2, '0')).join('');
 
         let newSettings = {...settings};
         newSettings = {...newSettings, token: token};
@@ -96,7 +95,7 @@ const AMAttribute = (props) => {
             </label>
             <div className="col-sm-8">
                 <input
-                    id={`PluginSettings.Plugins.alertmanager.${settingName + "." + settings.id}`}
+                    id={`PluginSettings.Plugins.alertmanager.${settingName + "." + props.id}`}
                     className="form-control"
                     type="input"
                     onChange={onChangeFunction}
@@ -117,7 +116,7 @@ const AMAttribute = (props) => {
         </label>
         <div className="col-sm-8">
             <div
-                id={`PluginSettings.Plugins.alertmanager.${settingName + "." + settings.id}`}
+                id={`PluginSettings.Plugins.alertmanager.${settingName + "." + props.id}`}
                 className="form-control disabled"
                 >
                 {settings[settingName] !== undefined && settings[settingName] !== ""? settings[settingName] : <span className="placeholder-text"></span>}
@@ -155,7 +154,7 @@ const AMAttribute = (props) => {
                         "Team Name:",
                         "team",
                         handleTeamNameInput,
-                        (<span>{"Team you want to send messages to. Use the team name such as \'my-team\', instead of the display name."}</span>)
+                        (<span>{"Team you want to send messages to. Use the team name such as 'my-team', instead of the display name."}</span>)
                         )
                     }
 
@@ -180,7 +179,7 @@ const AMAttribute = (props) => {
                         "AlertManager URL:",
                         "alertmanagerurl",
                         handleURLInput,
-                        (<span>{"The URL of your AlertManager instance, e.g. \'"}<a href="http://alertmanager.example.com/" rel="noopener noreferrer" target="_blank">{"http://alertmanager.example.com/"}</a>{"\'"}</span>)
+                        (<span>{"The URL of your AlertManager instance, e.g. '"}<a href="http://alertmanager.example.com/" rel="noopener noreferrer" target="_blank">{"http://alertmanager.example.com/"}</a>{"'"}</span>)
                         )
                     }
                 </div>
@@ -193,6 +192,7 @@ AMAttribute.propTypes = {
     id: PropTypes.string.isRequired,
     orderNumber: PropTypes.number.isRequired,
     attributes: PropTypes.object,
+    onDelete: PropTypes.func.isRequired,
     onChange: PropTypes.func.isRequired
 }
 

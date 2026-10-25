@@ -7,11 +7,10 @@ import (
 	"time"
 
 	"github.com/hako/durafmt"
-	"github.com/prometheus/alertmanager/types"
 
-	"github.com/mattermost/mattermost-plugin-api/experimental/command"
-	"github.com/mattermost/mattermost-server/v6/model"
-	"github.com/mattermost/mattermost-server/v6/plugin"
+	"github.com/mattermost/mattermost/server/public/model"
+	"github.com/mattermost/mattermost/server/public/plugin"
+	"github.com/mattermost/mattermost/server/public/pluginapi/experimental/command"
 
 	"github.com/cpanato/mattermost-plugin-alertmanager/server/alertmanager"
 )
@@ -93,6 +92,9 @@ func (p *Plugin) ExecuteCommand(_ *plugin.Context, args *model.CommandArgs) (*mo
 
 func (p *Plugin) executeCommand(args *model.CommandArgs) string {
 	split := strings.Fields(args.Command)
+	if len(split) == 0 {
+		return ""
+	}
 	cmd := split[0]
 	action := ""
 	if len(split) > 1 {
@@ -149,9 +151,9 @@ func (p *Plugin) handleAlert(args *model.CommandArgs) (string, error) {
 		}
 		alertsCount += len(alerts)
 
-		attachments := make([]*model.SlackAttachment, 0)
+		attachments := make([]*model.MessageAttachment, 0)
 		for _, alert := range alerts {
-			var fields []*model.SlackAttachmentField
+			var fields []*model.MessageAttachmentField
 			fields = addFields(fields, "Status", string(alert.Status()), false)
 			for k, v := range alert.Annotations {
 				fields = addFields(fields, string(k), string(v), true)
@@ -163,7 +165,7 @@ func (p *Plugin) handleAlert(args *model.CommandArgs) (string, error) {
 			fields = addFields(fields, "Start At", alert.StartsAt.String(), true)
 			fields = addFields(fields, "Ended At", alert.EndsAt.String(), true)
 			fields = addFields(fields, "AlertManager Config ID", alertConfig.ID, true)
-			attachment := &model.SlackAttachment{
+			attachment := &model.MessageAttachment{
 				Title:  fmt.Sprintf("Alert Name: %s", alert.Name()),
 				Fields: fields,
 				Color:  setColor(string(alert.Status())),
@@ -172,12 +174,12 @@ func (p *Plugin) handleAlert(args *model.CommandArgs) (string, error) {
 		}
 
 		post := &model.Post{
-			ChannelId: p.AlertConfigIDChannelID[alertConfig.ID],
+			ChannelId: p.alertChannelID(alertConfig.ID),
 			UserId:    p.BotUserID,
 			RootId:    args.RootId,
 		}
 
-		model.ParseSlackAttachment(post, attachments)
+		model.ParseMessageAttachment(post, attachments)
 		if _, appErr := p.API.CreatePost(post); appErr != nil {
 			errors = append(errors, fmt.Sprintf("Channel %q: Error creating the Alert post", alertConfig.Channel))
 			continue
@@ -207,21 +209,21 @@ func (p *Plugin) handleStatus(args *model.CommandArgs) (string, error) {
 		}
 
 		uptime := durafmt.Parse(time.Since(status.Uptime)).String()
-		var fields []*model.SlackAttachmentField
+		var fields []*model.MessageAttachmentField
 		fields = addFields(fields, "AlertManager Version ", status.VersionInfo.Version, false)
 		fields = addFields(fields, "AlertManager Uptime", uptime, false)
 
-		attachment := &model.SlackAttachment{
+		attachment := &model.MessageAttachment{
 			Fields: fields,
 		}
 
 		post := &model.Post{
-			ChannelId: p.AlertConfigIDChannelID[alertConfig.ID],
+			ChannelId: p.alertChannelID(alertConfig.ID),
 			UserId:    p.BotUserID,
 			RootId:    args.RootId,
 		}
 
-		model.ParseSlackAttachment(post, []*model.SlackAttachment{attachment})
+		model.ParseMessageAttachment(post, []*model.MessageAttachment{attachment})
 		if _, appErr := p.API.CreatePost(post); appErr != nil {
 			errors = append(errors, fmt.Sprintf("Channel %q: Error creating the Status post", alertConfig.Channel))
 			continue
@@ -259,9 +261,9 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (string, error) {
 		}
 		silencesCount += len(silences)
 
-		attachments := make([]*model.SlackAttachment, 0)
+		attachments := make([]*model.MessageAttachment, 0)
 		for _, silence := range silences {
-			attachment := ConvertSilenceToSlackAttachment(silence, alertConfig, args.UserId, siteURLPort)
+			attachment := ConvertSilenceToMessageAttachment(silence, alertConfig, args.UserId, siteURLPort)
 			if attachment != nil {
 				attachments = append(attachments, attachment)
 			}
@@ -273,12 +275,12 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (string, error) {
 		pendingSilencesCount += len(attachments)
 
 		post := &model.Post{
-			ChannelId: p.AlertConfigIDChannelID[alertConfig.ID],
+			ChannelId: p.alertChannelID(alertConfig.ID),
 			UserId:    p.BotUserID,
 			RootId:    args.RootId,
 		}
 
-		model.ParseSlackAttachment(post, attachments)
+		model.ParseMessageAttachment(post, attachments)
 		if _, appErr := p.API.CreatePost(post); appErr != nil {
 			errors = append(errors, fmt.Sprintf("Channel %q: Error creating the Alert post", alertConfig.Channel))
 			continue
@@ -325,11 +327,11 @@ func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (string, error) {
 	return fmt.Sprintf("Silence %s expired.", parameters[1]), nil
 }
 
-func ConvertSilenceToSlackAttachment(silence types.Silence, config alertConfig, userID, siteURLPort string) *model.SlackAttachment {
+func ConvertSilenceToMessageAttachment(silence alertmanager.Silence, config alertConfig, userID, siteURLPort string) *model.MessageAttachment {
 	if string(silence.Status.State) == "expired" {
 		return nil
 	}
-	var fields []*model.SlackAttachmentField
+	var fields []*model.MessageAttachmentField
 	var emoji, matchers, duration string
 	for _, m := range silence.Matchers {
 		if m.Name == "alertname" {
@@ -378,7 +380,7 @@ func ConvertSilenceToSlackAttachment(silence types.Silence, config alertConfig, 
 			URL: fmt.Sprintf("http://localhost%v/plugins/%v/api/expire?token=%s", siteURLPort, manifest.ID, config.Token),
 		},
 	}
-	attachment := &model.SlackAttachment{
+	attachment := &model.MessageAttachment{
 		Title:  fmt.Sprintf("Silence ID: %s", silence.ID),
 		Fields: fields,
 		Color:  color,

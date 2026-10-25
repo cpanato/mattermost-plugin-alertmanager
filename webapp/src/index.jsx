@@ -1,3 +1,5 @@
+import React from 'react';
+
 import {id as pluginId} from './manifest';
 
 import CustomAttributesSettings from './components/admin_settings/CustomAttributeSettings.jsx';

@@ -1,27 +1,13 @@
 global:
-  resolve_timeout: 5m
-  http_config: {}
-  smtp_hello: localhost
-  smtp_require_tls: true
+  resolve_timeout: 1m
 route:
-  receiver: mattermost-alertmananger
-  group_by:
-  - alertname
-  group_wait: 10s
-  group_interval: 10s
+  receiver: mattermost
+  group_by: [alertname]
+  group_wait: 1s
+  group_interval: 5s
   repeat_interval: 30m
-inhibit_rules:
-- source_match:
-    severity: critical
-  target_match:
-    severity: warning
-  equal:
-  - alertname
-  - dev
-  - instance
-templates: []
 receivers:
-- name: 'mattermost-alertmananger'
-  webhook_configs:
-  - send_resolved: true
-    url: 'https://cpanato-outrider.eu.ngrok.io/plugins/alertmanager/api/webhook?token=FR2kDopHGgydR7Zhtyrxvz-8a6Pjavai'
+  - name: mattermost
+    webhook_configs:
+      - send_resolved: true
+        url: 'http://mattermost:8065/plugins/alertmanager/api/webhook?token=local-development-token'
