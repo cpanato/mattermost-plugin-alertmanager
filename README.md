@@ -145,6 +145,9 @@ server (the local stack uses `http://alertmanager:9093`).
 For installation settings and signature requirements, see the official
 [plugin management documentation](https://docs.mattermost.com/developers/integrate/plugins/using-and-managing-plugins).
 
+For certificate errors and command timeouts, see the
+[connection troubleshooting guide](docs/troubleshooting.md).
+
 ## Plugin in action
 
 The screenshots below use Mattermost 11.7.14, a local demo channel and sample alerts.
