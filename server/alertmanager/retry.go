@@ -2,6 +2,8 @@ package alertmanager
 
 import (
 	"context"
+	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -32,6 +34,12 @@ func httpRetry(method string, url string) (*http.Response, error) {
 
 		resp, err = http.DefaultClient.Do(req.WithContext(ctx))
 		if err != nil {
+			// Retrying cannot fix certificate trust, expiry or hostname errors.
+			// Return the original cause before the retry deadline obscures it.
+			var certificateErr *tls.CertificateVerificationError
+			if errors.As(err, &certificateErr) {
+				return backoff.Permanent(err)
+			}
 			return err
 		}
 
