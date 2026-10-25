@@ -18,10 +18,13 @@ this change: compilation alone does not establish compatibility with a server.
 Mattermost 11.1 introduced React 18; Mattermost 12 uses React 19. The plugin
 continues to use the host's external React with the classic JSX transform.
 The old React Bootstrap modal was replaced with a native dialog to remove its
-legacy React API dependency. React 18 stays as the development dependency so the
-source can target both the ESR and the React 19 host. Redux, mattermost-redux,
+legacy React API dependency. React is supplied by the host and remains external
+to the bundle; upgrading the development dependency to React 19 leaves the
+runtime bundle unchanged. Source code must keep using APIs available in both
+React 18 and React 19 while Mattermost 11.7 remains supported. Redux, mattermost-redux,
 Superagent, Lodash and Node crypto polyfills were unused and removed. Tokens
-now use browser `crypto.getRandomValues`. Node 24 is the build baseline.
+now use browser `crypto.getRandomValues`. Babel 8 keeps the classic JSX transform
+explicit, uses the dedicated core-js polyfill plugin and requires Node 24.11+.
 ESLint 10 tracks JSX references directly. The old eslint-plugin-react dependency
 was used only for JSX reference tracking and has been removed. The React import
 is retained for the classic JSX transform.

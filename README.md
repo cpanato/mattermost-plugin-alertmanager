@@ -10,7 +10,7 @@ Inspired by [alertmanager-bot](https://github.com/metalmatze/alertmanager-bot).
 ## Requirements
 
 - Mattermost **11.7+** (the current ESR is the local development baseline).
-- Go **1.27.0+**, Node **24**, npm **10+** to build.
+- Go **1.27.0+**, Node **24.11+**, npm **10+** to build.
 - Docker Compose v2 for the local integration environment.
 
 The minimum server version has increased from 7.5. See the
@@ -22,7 +22,7 @@ The minimum server version has increased from 7.5. See the
 Use a disposable local instance with no existing Mattermost on port 8065:
 
 ```sh
-nvm use
+nvm install
 make dev-up
 make dev-setup
 make dev-smoke

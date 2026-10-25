@@ -1,6 +1,6 @@
 const path = require('path');
 
-module.exports = {
+module.exports = (_env, argv) => ({
     entry: './src/index.jsx',
     resolve: {extensions: ['.js', '.jsx', '.ts', '.tsx']},
     module: {
@@ -11,9 +11,17 @@ module.exports = {
                 use: {
                     loader: 'babel-loader',
                     options: {
+                        envName: argv.mode === 'production' ? 'production' : 'development',
+                        targets: 'defaults',
+                        plugins: [
+                            ['babel-plugin-polyfill-corejs3', {
+                                method: 'usage-global',
+                                version: require('core-js/package.json').version,
+                            }],
+                        ],
                         presets: [
-                            ['@babel/preset-env', {targets: 'defaults', useBuiltIns: 'usage', corejs: 3}],
-                            '@babel/preset-react',
+                            '@babel/preset-env',
+                            ['@babel/preset-react', {runtime: 'classic'}],
                             '@babel/preset-typescript',
                         ],
                     },
@@ -31,4 +39,4 @@ module.exports = {
         filename: 'main.js',
         clean: true,
     },
-};
+});
