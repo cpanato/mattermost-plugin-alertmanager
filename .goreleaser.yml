@@ -4,6 +4,9 @@ project_name: mattermost-plugin-alertmanager
 
 dist: goreleaser
 
+changelog:
+  use: github-native
+
 builds:
   - skip: true
 
@@ -18,6 +21,7 @@ checksum:
     - glob: ./dist/alertmanager-{{ .Version }}.tar.gz
 
 release:
+  prerelease: auto
   github:
     owner: cpanato
     name: mattermost-plugin-alertmanager

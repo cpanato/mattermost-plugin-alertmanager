@@ -18,12 +18,16 @@ this change: compilation alone does not establish compatibility with a server.
 Mattermost 11.1 introduced React 18; Mattermost 12 uses React 19. The plugin
 continues to use the host's external React with the classic JSX transform.
 The old React Bootstrap modal was replaced with a native dialog to remove its
-legacy React API dependency. React 18 stays as the development dependency so the
-source can target both the ESR and the React 19 host. Redux, mattermost-redux,
+legacy React API dependency. React is supplied by the host and remains external
+to the bundle; upgrading the development dependency to React 19 leaves the
+runtime bundle unchanged. Source code must keep using APIs available in both
+React 18 and React 19 while Mattermost 11.7 remains supported. Redux, mattermost-redux,
 Superagent, Lodash and Node crypto polyfills were unused and removed. Tokens
-now use browser `crypto.getRandomValues`. Node 24 is the build baseline.
-ESLint stays on 9 because eslint-plugin-react 7.37.5 does not support ESLint 10;
-upgrade them together once the upstream peer dependency permits it.
+now use browser `crypto.getRandomValues`. Babel 8 keeps the classic JSX transform
+explicit, uses the dedicated core-js polyfill plugin and requires Node 24.11+.
+ESLint 10 tracks JSX references directly. The old eslint-plugin-react dependency
+was used only for JSX reference tracking and has been removed. The React import
+is retained for the classic JSX transform.
 
 Other fixes include configuration cloning, channel-map locking, avoiding plugin
 reactivation inside the initial configuration hook, immutable settings updates,
@@ -51,9 +55,14 @@ posts, and acceptance of the status, alerts and silences commands. Each server
 used separate Docker volumes and PostgreSQL 17.7. The ESR was then upgraded to
 PostgreSQL 17.10 and its smoke test passed again. It is left running for exploration.
 The same API smoke test is available as `make dev-smoke` and in the manually
-triggered integration workflow. It does not exercise browser interactions or
-assert slash-command response contents; the UI and silence-action release
-checks above remain manual.
+triggered integration workflow. Its committed checks cover API delivery and
+command acceptance. Additional RC validation checked actual status output and
+silence listing/expiration through commands and the Mattermost post-action API
+on both server versions. Browser checks on Mattermost 11.7.14 (React 18) and
+12.0.0 (React 19) passed for adding/editing a configuration, generating a token,
+saving/reloading it, and confirming/saving deletion. Activation after restart
+was also checked on the ESR. The refreshed README screenshots were captured
+from a separate local demo channel on the ESR.
 
 Go race tests, ESLint, golangci-lint v2.15.0 (both modules), the five-platform
 bundle build, Compose validation and GoReleaser configuration validation passed.
