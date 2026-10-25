@@ -1,6 +1,6 @@
 module github.com/cpanato/mattermost-plugin-alertmanager/build
 
-go 1.26.10
+go 1.27.0
 
 require (
 	github.com/mattermost/mattermost/server/public v0.6.0

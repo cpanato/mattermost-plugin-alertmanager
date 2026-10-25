@@ -6,7 +6,7 @@ must be enabled on the server. This repository remains Apache-2.0 licensed.
 
 The old `mattermost-plugin-api` repository was archived on February 28, 2025.
 Its helpers now live in `github.com/mattermost/mattermost/server/public/pluginapi`.
-Both Go modules now use the public SDK v0.6.0 and require Go 1.26.10 or later.
+Both Go modules now use the public SDK v0.6.0 and require Go 1.27.0 or later.
 Alertmanager is updated to v0.34.1. Its removed `types.Silence` export is replaced
 with a local API v2 response type, covered by a wire-format test.
 

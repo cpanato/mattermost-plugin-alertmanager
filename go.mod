@@ -1,6 +1,6 @@
 module github.com/cpanato/mattermost-plugin-alertmanager
 
-go 1.26.10
+go 1.27.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
