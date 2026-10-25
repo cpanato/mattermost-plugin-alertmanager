@@ -345,11 +345,15 @@ func ConvertSilenceToMessageAttachment(silence alertmanager.Silence, config aler
 	resolved := alertmanager.Resolved(silence)
 	if !resolved {
 		emoji = "🔕"
-		duration = fmt.Sprintf(
-			"**Started**: %s ago\n**Ends:** %s\n",
-			durafmt.Parse(time.Since(silence.StartsAt)),
-			durafmt.Parse(time.Since(silence.EndsAt)),
-		)
+		if silence.StartsAt.After(time.Now()) {
+			duration = fmt.Sprintf("**Starts:** in %s\n**Ends:** in %s\n",
+				durafmt.Parse(time.Until(silence.StartsAt)).LimitFirstN(2),
+				durafmt.Parse(time.Until(silence.EndsAt)).LimitFirstN(2))
+		} else {
+			duration = fmt.Sprintf("**Started:** %s ago\n**Ends:** in %s\n",
+				durafmt.Parse(time.Since(silence.StartsAt)).LimitFirstN(2),
+				durafmt.Parse(time.Until(silence.EndsAt)).LimitFirstN(2))
+		}
 		fields = addFields(fields, emoji, duration, false)
 	} else {
 		duration = fmt.Sprintf(

@@ -1,6 +1,7 @@
-# Alertmanager Plugin for Mattermost
+# Prometheus Alertmanager Plugin for Mattermost
 
-Receive Alertmanager webhooks in Mattermost, list alerts and silences, check
+Connect [Prometheus Alertmanager](https://prometheus.io/docs/alerting/latest/alertmanager/)
+to Mattermost. Receive its webhooks, list alerts and silences, check
 Alertmanager status, and expire silences using `/alertmanager` commands or buttons.
 Supports multiple Alertmanager/channel configurations and creates a bot account.
 
@@ -64,7 +65,7 @@ when comparing different server versions.
 ```sh
 make test                     # Go tests with the race detector, including build tools
 make check-style              # ESLint and golangci-lint v2.15.0
-make dist                     # dist/alertmanager-0.4.1.tar.gz
+make dist                     # dist/alertmanager-0.5.0-rc.1.tar.gz
 ```
 
 There are no automated web UI tests yet. The web build validates JSX/TypeScript
@@ -75,6 +76,37 @@ CI runs Go tests, web lint, and the bundle build. Dependencies are installed
 from the committed npm lockfile with `npm ci`.
 The manually triggered **Local integration test** workflow runs the Docker smoke
 test against Mattermost 11.7.14 and 12.0.0.
+
+## Verify release artifacts
+
+Releases built with Cosign 3 provide a `.sigstore.json` bundle containing the
+package signature, signing certificate and transparency-log verification data.
+Download it together with the plugin archive and checksums, then verify the
+archive against the release workflow's identity. Set `PLUGIN_VERSION` to the
+downloaded version without the `v` prefix:
+
+```sh
+PLUGIN_VERSION=x.y.z
+shasum -a 256 -c "mattermost-plugin-alertmanager_${PLUGIN_VERSION}_checksums.txt"
+cosign verify-blob \
+  --bundle "alertmanager-${PLUGIN_VERSION}.sigstore.json" \
+  --certificate-identity "https://github.com/cpanato/mattermost-plugin-alertmanager/.github/workflows/release.yml@refs/tags/v${PLUGIN_VERSION}" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  "alertmanager-${PLUGIN_VERSION}.tar.gz"
+```
+
+The existing `v0.5.0-rc.1` release uses the earlier `.sig` and `.pem` files.
+For that release, create a local verification bundle before running the
+`verify-blob` command above:
+
+```sh
+PLUGIN_VERSION=0.5.0-rc.1
+cosign bundle create \
+  --artifact "alertmanager-${PLUGIN_VERSION}.tar.gz" \
+  --signature "alertmanager-${PLUGIN_VERSION}.sig" \
+  --certificate "alertmanager-${PLUGIN_VERSION}.pem" \
+  --out "alertmanager-${PLUGIN_VERSION}.sigstore.json"
+```
 
 ## Installation
 
@@ -103,6 +135,16 @@ For installation settings and signature requirements, see the official
 
 ## Plugin in action
 
-![Alerts](assets/alertmanager-1.png)
-![Silences](assets/alertmanager-2.png)
-![Commands](assets/alertmanager-3.png)
+The screenshots below use Mattermost 11.7.14, a local demo channel and sample alerts.
+
+Configure the team, channel, token and Alertmanager endpoint:
+
+![Plugin settings](assets/alertmanager-1.png)
+
+Receive a Prometheus Alertmanager notification:
+
+![Alert notification](assets/alertmanager-2.png)
+
+List active silences and expire one using its action button:
+
+![Active silence](assets/alertmanager-3.png)
