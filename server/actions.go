@@ -14,9 +14,7 @@ func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request, aler
 	p.API.LogInfo("Received expire silence action")
 
 	var action *Action
-	_ = json.NewDecoder(r.Body).Decode(&action)
-
-	if action == nil {
+	if err := json.NewDecoder(r.Body).Decode(&action); err != nil || action == nil || action.Context == nil {
 		encodeEphermalMessage(w, "We could not decode the action")
 		return
 	}
