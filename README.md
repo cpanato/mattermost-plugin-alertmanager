@@ -93,7 +93,7 @@ when comparing different server versions.
 ```sh
 make test                     # Go tests with the race detector, including build tools
 make check-style              # ESLint and golangci-lint v2.15.0
-make dist                     # dist/alertmanager-0.5.0-rc.1.tar.gz
+make dist                     # dist/alertmanager-0.5.0-rc.2.tar.gz
 ```
 
 There are no automated web UI tests yet. The web build validates JSX/TypeScript
