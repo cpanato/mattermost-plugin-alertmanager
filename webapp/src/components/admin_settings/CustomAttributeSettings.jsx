@@ -96,7 +96,9 @@ const CustomAttributesSettings = (props) => {
                         team: value.team,
                         channel: value.channel,
                         token: value.token,
-                        alertmanagerurl: value.alertmanagerurl
+                        alertmanagerurl: value.alertmanagerurl,
+                        titletemplate: value.titletemplate,
+                        messagetemplate: value.messagetemplate
                     }}
                 />
             );

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+
+	"github.com/cpanato/mattermost-plugin-alertmanager/internal/notification"
 )
 
 // configuration captures the plugin's external configuration as exposed in the Mattermost server
@@ -28,6 +30,11 @@ type alertConfig struct {
 	Channel         string
 	Team            string
 	AlertManagerURL string
+	TitleTemplate   string
+	MessageTemplate string
+
+	// Compiled templates are immutable and can be shared by configuration clones.
+	templates *notification.Templates
 }
 
 func (ac *alertConfig) IsValid() error {
@@ -117,6 +124,11 @@ func (p *Plugin) OnConfigurationChange() error {
 	for id, alertConfigInstance := range configurationInstance.AlertConfigs {
 		alertConfigInstance.ID = id
 		alertConfigInstance.AlertManagerURL = strings.TrimRight(alertConfigInstance.AlertManagerURL, `/`)
+		compiled, err := notification.Parse(alertConfigInstance.TitleTemplate, alertConfigInstance.MessageTemplate)
+		if err != nil {
+			p.API.LogWarn("Invalid notification template; using default alert format", "config_id", id, "error", err.Error())
+		}
+		alertConfigInstance.templates = compiled
 		configurationInstance.AlertConfigs[id] = alertConfigInstance
 	}
 
