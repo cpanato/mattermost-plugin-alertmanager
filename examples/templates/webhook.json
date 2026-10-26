@@ -1,0 +1,27 @@
+{
+  "version": "4",
+  "status": "firing",
+  "receiver": "platform",
+  "externalURL": "https://alertmanager.example.com",
+  "groupLabels": {"alertname": "InstanceDown"},
+  "commonLabels": {"service": "checkout"},
+  "commonAnnotations": {},
+  "routeLabels": {"team": "sre"},
+  "alerts": [
+    {
+      "status": "firing",
+      "labels": {"alertname": "InstanceDown", "instance": "host-1", "severity": "warning"},
+      "annotations": {"summary": "Checkout host is unreachable", "description": "The host has not responded for five minutes."},
+      "startsAt": "2026-10-26T12:00:00Z",
+      "generatorURL": "https://prometheus.example.com/graph"
+    },
+    {
+      "status": "resolved",
+      "labels": {"alertname": "InstanceDown", "instance": "host-2", "severity": "critical"},
+      "annotations": {"summary": "Checkout host recovered", "description": "The host is responding again."},
+      "startsAt": "2026-10-26T11:55:00Z",
+      "endsAt": "2026-10-26T12:05:00Z",
+      "generatorURL": "https://prometheus.example.com/graph"
+    }
+  ]
+}

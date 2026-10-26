@@ -62,3 +62,17 @@
 .alertmanager-confirm-dialog button + button {
     margin-left: 8px;
 }
+
+.alert-setting__templates {
+    margin-top: 16px;
+}
+
+.alert-setting__templates summary {
+    cursor: pointer;
+    margin-bottom: 12px;
+}
+
+.alert-setting__template-input {
+    font-family: monospace;
+    resize: vertical;
+}

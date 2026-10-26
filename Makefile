@@ -184,7 +184,7 @@ detach: setup-attach
 .PHONY: test
 test:
 ifneq ($(HAS_SERVER),)
-	$(GO) test $(GO_TEST_FLAGS) ./server/...
+	$(GO) test $(GO_TEST_FLAGS) ./server/... ./internal/... ./cmd/...
 	cd build && $(GO) test $(GO_TEST_FLAGS) ./...
 endif
 ifneq ($(wildcard ./build/sync/plan/.),)
@@ -302,3 +302,8 @@ dev-ha-smoke:
 .PHONY: dev-ha-down
 dev-ha-down:
 	docker compose -f hack/docker-compose.yaml -f hack/docker-compose.ha.yaml down
+
+## Previews compact notification templates using the example webhook.
+.PHONY: template-preview
+template-preview:
+	$(GO) run ./cmd/alertmanager-template -input examples/templates/webhook.json -title-template examples/templates/title.tmpl -message-template examples/templates/message.tmpl

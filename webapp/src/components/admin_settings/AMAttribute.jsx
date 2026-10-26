@@ -7,12 +7,16 @@ const AMAttribute = (props) => {
         channel: "",
         team: "",
         token: "",
+        titletemplate: "",
+        messagetemplate: "",
 
     } : {
         alertmanagerurl: props.attributes.alertmanagerurl? props.attributes.alertmanagerurl: "",
         channel: props.attributes.channel? props.attributes.channel : "",
         team: props.attributes.team ? props.attributes.team: "",
         token: props.attributes.token? props.attributes.token: "",
+        titletemplate: props.attributes.titletemplate || "",
+        messagetemplate: props.attributes.messagetemplate || "",
 
     };
 
@@ -72,6 +76,12 @@ const AMAttribute = (props) => {
 
     const handleDelete = () => {
         props.onDelete(props.id);
+    }
+
+    const handleTemplateInput = (e) => {
+        const newSettings = {...settings, [e.target.name]: e.target.value};
+        setSettings(newSettings);
+        props.onChange({id: props.id, attributes: newSettings});
     }
 
     const regenerateToken = (e) => {
@@ -182,6 +192,40 @@ const AMAttribute = (props) => {
                         (<span>{"The URL of your AlertManager instance, e.g. '"}<a href="http://alertmanager.example.com/" rel="noopener noreferrer" target="_blank">{"http://alertmanager.example.com/"}</a>{"'"}</span>)
                         )
                     }
+                    <details className="alert-setting__templates">
+                        <summary>{'Custom notification templates (optional)'}</summary>
+                        <p className="help-text">
+                            {'Leave both fields empty to keep the default format. Custom templates produce compact alerts and keep their status colors. Invalid templates use the default format.'}
+                        </p>
+                        {[
+                            ['titletemplate', 'Title template:', 2, '{{ .Status | toUpper }}: {{ .Labels.alertname }}'],
+                            ['messagetemplate', 'Message template:', 4, 'alertname={{ .Labels.alertname }}, instance={{ .Labels.instance }}, severity={{ .Labels.severity }}'],
+                        ].map(([name, label, rows, placeholder]) => (
+                            <div className="form-group" key={name}>
+                                <label className="control-label col-sm-4" htmlFor={`PluginSettings.Plugins.alertmanager.${name}.${props.id}`}>
+                                    {label}
+                                </label>
+                                <div className="col-sm-8">
+                                    <textarea
+                                        id={`PluginSettings.Plugins.alertmanager.${name}.${props.id}`}
+                                        name={name}
+                                        className="form-control alert-setting__template-input"
+                                        rows={rows}
+                                        maxLength={16384}
+                                        placeholder={placeholder}
+                                        value={settings[name]}
+                                        onChange={handleTemplateInput}
+                                    />
+                                </div>
+                            </div>
+                        ))}
+                        <p className="help-text">
+                            {'Templates run once per alert. '}
+                            <a href="https://github.com/cpanato/mattermost-plugin-alertmanager/blob/main/docs/templates.md" target="_blank" rel="noopener noreferrer">
+                                {'See the available fields, examples and preview CLI.'}
+                            </a>
+                        </p>
+                    </details>
                 </div>
             </div>
         </div>
