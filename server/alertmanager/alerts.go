@@ -8,8 +8,8 @@ import (
 )
 
 // ListAlerts returns a slice of Alert and an error.
-func ListAlerts(alertmanagerURL string) ([]*alert.Alert, error) {
-	resp, err := httpRetry(http.MethodGet, alertmanagerURL+"/api/v2/alerts")
+func ListAlerts(alertmanagerURL string, auth BasicAuth) ([]*alert.Alert, error) {
+	resp, err := httpRetry(http.MethodGet, alertmanagerURL+"/api/v2/alerts", auth)
 	if err != nil {
 		return nil, err
 	}

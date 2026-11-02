@@ -45,14 +45,14 @@ func TestHTTPSAndRedirects(t *testing.T) {
 	defer redirect.Close()
 	for _, tc := range []struct{ name, url string }{{"direct", upstream.URL}, {"HTTP to HTTPS", redirect.URL}} {
 		t.Run(tc.name, func(t *testing.T) {
-			status, err := Status(tc.url)
+			status, err := Status(tc.url, BasicAuth{})
 			require.NoError(t, err)
 			require.Equal(t, "test-https", status.VersionInfo.Version)
-			_, err = ListAlerts(tc.url)
+			_, err = ListAlerts(tc.url, BasicAuth{})
 			require.NoError(t, err)
-			_, err = ListSilences(tc.url)
+			_, err = ListSilences(tc.url, BasicAuth{})
 			require.NoError(t, err)
-			require.NoError(t, ExpireSilence("test", tc.url))
+			require.NoError(t, ExpireSilence("test", tc.url, BasicAuth{}))
 		})
 	}
 }
@@ -78,7 +78,7 @@ func TestCertificateErrorsArePreserved(t *testing.T) {
 			tc.client.Transport = roundTripFunc(func(r *http.Request) (*http.Response, error) { attempts++; return transport.RoundTrip(r) })
 			defer transport.CloseIdleConnections()
 			useHTTPClient(t, tc.client)
-			_, err := Status(upstream.URL)
+			_, err := Status(upstream.URL, BasicAuth{})
 			var verification *tls.CertificateVerificationError
 			require.ErrorAs(t, err, &verification, "certificate failures must not become a generic context deadline")
 			if tc.name == "untrusted CA" {

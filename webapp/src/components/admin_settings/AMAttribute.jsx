@@ -7,6 +7,8 @@ const AMAttribute = (props) => {
         channel: "",
         team: "",
         token: "",
+        user: "",
+        password: "",
         titletemplate: "",
         messagetemplate: "",
 
@@ -15,6 +17,8 @@ const AMAttribute = (props) => {
         channel: props.attributes.channel? props.attributes.channel : "",
         team: props.attributes.team ? props.attributes.team: "",
         token: props.attributes.token? props.attributes.token: "",
+        user: props.attributes.user || "",
+        password: props.attributes.password || "",
         titletemplate: props.attributes.titletemplate || "",
         messagetemplate: props.attributes.messagetemplate || "",
 
@@ -97,7 +101,7 @@ const AMAttribute = (props) => {
         props.onChange({id: props.id, attributes:newSettings});
     }
 
-    const generateSimpleStringInputSetting = ( title, settingName, onChangeFunction, helpTextJSX) => {
+    const generateSimpleStringInputSetting = ( title, settingName, onChangeFunction, helpTextJSX, inputType = "input") => {
         return (
             <div className="form-group" >
             <label className="control-label col-sm-4">
@@ -107,7 +111,9 @@ const AMAttribute = (props) => {
                 <input
                     id={`PluginSettings.Plugins.alertmanager.${settingName + "." + props.id}`}
                     className="form-control"
-                    type="input"
+                    type={inputType}
+                    name={settingName}
+                    autoComplete={inputType === "password" ? "new-password" : undefined}
                     onChange={onChangeFunction}
                     value={settings[settingName]}
                 />
@@ -190,6 +196,21 @@ const AMAttribute = (props) => {
                         "alertmanagerurl",
                         handleURLInput,
                         (<span>{"The URL of your AlertManager instance, e.g. '"}<a href="http://alertmanager.example.com/" rel="noopener noreferrer" target="_blank">{"http://alertmanager.example.com/"}</a>{"'"}</span>)
+                        )
+                    }
+                    { generateSimpleStringInputSetting(
+                        "AlertManager Username:",
+                        "user",
+                        handleTemplateInput,
+                        (<span>{"Optional username for HTTP Basic Authentication."}</span>)
+                        )
+                    }
+                    { generateSimpleStringInputSetting(
+                        "AlertManager Password:",
+                        "password",
+                        handleTemplateInput,
+                        (<span>{"Optional password for HTTP Basic Authentication."}</span>),
+                        "password"
                         )
                     }
                     <details className="alert-setting__templates">

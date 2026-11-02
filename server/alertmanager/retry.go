@@ -12,6 +12,11 @@ import (
 	"github.com/cenkalti/backoff/v4"
 )
 
+type BasicAuth struct {
+	Username string
+	Password string
+}
+
 func httpBackoff() *backoff.ExponentialBackOff {
 	b := backoff.NewExponentialBackOff()
 	b.InitialInterval = 200 * time.Millisecond
@@ -20,7 +25,7 @@ func httpBackoff() *backoff.ExponentialBackOff {
 	return b
 }
 
-func httpRetry(method string, url string) (*http.Response, error) {
+func httpRetry(method string, url string, auth BasicAuth) (*http.Response, error) {
 	var resp *http.Response
 	var err error
 
@@ -30,6 +35,9 @@ func httpRetry(method string, url string) (*http.Response, error) {
 		req, errReq := http.NewRequest(method, url, nil)
 		if errReq != nil {
 			return backoff.Permanent(errReq)
+		}
+		if auth.Username != "" || auth.Password != "" {
+			req.SetBasicAuth(auth.Username, auth.Password)
 		}
 
 		resp, err = http.DefaultClient.Do(req.WithContext(ctx))
