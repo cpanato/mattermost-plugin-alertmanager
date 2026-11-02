@@ -154,6 +154,10 @@ receivers:
 ```
 
 The token is part of the URL; do not add extra quotes around its value.
+If the Alertmanager API requires HTTP Basic Authentication, configure its
+username and password in the optional **AlertManager Username** and
+**AlertManager Password** fields. Leave both blank when authentication is not
+required.
 Use a URL reachable from the Alertmanager container/server. Conversely, the
 Alertmanager URL in plugin settings must be reachable from the Mattermost
 server (the local stack uses `http://alertmanager:9093`).

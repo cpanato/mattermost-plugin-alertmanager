@@ -20,10 +20,10 @@ type StatusResponse struct {
 }
 
 // Status returns a StatusResponse or an error.
-func Status(alertmanagerURL string) (StatusResponse, error) {
+func Status(alertmanagerURL string, auth BasicAuth) (StatusResponse, error) {
 	var statusResponse StatusResponse
 
-	resp, err := httpRetry(http.MethodGet, alertmanagerURL+"/api/v2/status")
+	resp, err := httpRetry(http.MethodGet, alertmanagerURL+"/api/v2/status", auth)
 	if err != nil {
 		return statusResponse, err
 	}

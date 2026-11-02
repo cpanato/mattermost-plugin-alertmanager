@@ -26,7 +26,7 @@ func (p *Plugin) handleExpireAction(w http.ResponseWriter, r *http.Request, aler
 
 	silenceDeletedMsg := fmt.Sprintf("Silence %s expired.", action.Context.SilenceID)
 
-	err := alertmanager.ExpireSilence(action.Context.SilenceID, alertConfig.AlertManagerURL)
+	err := alertmanager.ExpireSilence(action.Context.SilenceID, alertConfig.AlertManagerURL, alertConfig.basicAuth())
 	if err != nil {
 		msg := fmt.Sprintf("failed to expire the silence: %v", err)
 		encodeEphermalMessage(w, msg)

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/cpanato/mattermost-plugin-alertmanager/internal/notification"
+	"github.com/cpanato/mattermost-plugin-alertmanager/server/alertmanager"
 )
 
 // configuration captures the plugin's external configuration as exposed in the Mattermost server
@@ -30,11 +31,17 @@ type alertConfig struct {
 	Channel         string
 	Team            string
 	AlertManagerURL string
+	User            string
+	Password        string
 	TitleTemplate   string
 	MessageTemplate string
 
 	// Compiled templates are immutable and can be shared by configuration clones.
 	templates *notification.Templates
+}
+
+func (ac alertConfig) basicAuth() alertmanager.BasicAuth {
+	return alertmanager.BasicAuth{Username: ac.User, Password: ac.Password}
 }
 
 func (ac *alertConfig) IsValid() error {

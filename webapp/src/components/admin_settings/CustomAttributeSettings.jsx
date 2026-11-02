@@ -30,7 +30,9 @@ const CustomAttributesSettings = (props) => {
                 alertmanagerurl: '',
                 channel: '',
                 team: '',
-                token: ''
+                token: '',
+                user: '',
+                password: ''
             }
         };
 
@@ -96,6 +98,8 @@ const CustomAttributesSettings = (props) => {
                         team: value.team,
                         channel: value.channel,
                         token: value.token,
+                        user: value.user,
+                        password: value.password,
                         alertmanagerurl: value.alertmanagerurl,
                         titletemplate: value.titletemplate,
                         messagetemplate: value.messagetemplate

@@ -141,7 +141,7 @@ func (p *Plugin) handleAlert(args *model.CommandArgs) (string, error) {
 	var errors []string
 
 	for _, alertConfig := range configuration.AlertConfigs {
-		alerts, err := alertmanager.ListAlerts(alertConfig.AlertManagerURL)
+		alerts, err := alertmanager.ListAlerts(alertConfig.AlertManagerURL, alertConfig.basicAuth())
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("AlertManagerURL %q: failed to list alerts... %v", alertConfig.AlertManagerURL, err))
 			continue
@@ -202,7 +202,7 @@ func (p *Plugin) handleStatus(args *model.CommandArgs) (string, error) {
 
 	var errors []string
 	for _, alertConfig := range configuration.AlertConfigs {
-		status, err := alertmanager.Status(alertConfig.AlertManagerURL)
+		status, err := alertmanager.Status(alertConfig.AlertManagerURL, alertConfig.basicAuth())
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("AlertManagerURL %q: failed to get status... %v", alertConfig.AlertManagerURL, err))
 			continue
@@ -251,7 +251,7 @@ func (p *Plugin) handleListSilences(args *model.CommandArgs) (string, error) {
 	siteURLPort := *config.ServiceSettings.ListenAddress
 
 	for _, alertConfig := range configuration.AlertConfigs {
-		silences, err := alertmanager.ListSilences(alertConfig.AlertManagerURL)
+		silences, err := alertmanager.ListSilences(alertConfig.AlertManagerURL, alertConfig.basicAuth())
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("AlertManagerURL %q: failed to get silences... %v", alertConfig.AlertManagerURL, err))
 			continue
@@ -316,7 +316,7 @@ func (p *Plugin) handleExpireSilence(args *model.CommandArgs) (string, error) {
 	configuration := p.getConfiguration()
 
 	if config, ok := configuration.AlertConfigs[parameters[0]]; ok {
-		err := alertmanager.ExpireSilence(parameters[1], config.AlertManagerURL)
+		err := alertmanager.ExpireSilence(parameters[1], config.AlertManagerURL, config.basicAuth())
 		if err != nil {
 			return "", fmt.Errorf("failed to expire the silence: %w", err)
 		}
