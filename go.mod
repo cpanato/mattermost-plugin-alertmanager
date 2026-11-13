@@ -8,7 +8,7 @@ require (
 	github.com/mattermost/mattermost/server/public v0.6.0
 	github.com/prometheus/alertmanager v0.34.2
 	github.com/stretchr/testify v1.12.1
-	golang.org/x/text v0.43.0
+	golang.org/x/text v0.44.0
 )
 
 require (
